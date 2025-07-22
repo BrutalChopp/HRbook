@@ -4,7 +4,7 @@
 BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
 
 # List of global administrator Telegram IDs
-ADMIN_IDS = ["@BrutalChA"]
+ADMIN_IDS = ["7007125219"]
 
 # Mapping of office name to administrator IDs
 OFFICES = {
