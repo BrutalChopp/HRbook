@@ -2,11 +2,13 @@ import os
 from contextlib import contextmanager
 import psycopg2
 
-DB_NAME = os.getenv("DB_NAME", "HRbase")
-DB_USER = os.getenv("DB_USER", "Sergey")
-DB_PASSWORD = os.getenv("DB_PASSWORD", "Qwerty455")
-DB_HOST = os.getenv("DB_HOST", "amvera-sergey13683-cnpg-hrbase-rw")
-DB_PORT = int(os.getenv("DB_PORT", "5432"))
+# Required database connection settings. These environment variables must be
+# defined or a ``KeyError`` will be raised on import.
+DB_NAME = os.environ["DB_NAME"]
+DB_USER = os.environ["DB_USER"]
+DB_PASSWORD = os.environ["DB_PASSWORD"]
+DB_HOST = os.environ["DB_HOST"]
+DB_PORT = int(os.environ["DB_PORT"])
 
 
 @contextmanager
