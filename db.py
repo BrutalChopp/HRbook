@@ -1,6 +1,14 @@
 import os
 from contextlib import contextmanager
+
+from dotenv import load_dotenv
 import psycopg2
+
+# Load environment variables from a .env file located next to this module.
+# This ensures database configuration is available when the module is imported.
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
 
 # Required database connection settings. These environment variables must be
 # defined or a ``KeyError`` will be raised on import.
