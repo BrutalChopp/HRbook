@@ -5,7 +5,7 @@ from datetime import datetime
 from telegram import Update
 from telegram.ext import ConversationHandler, MessageHandler, ContextTypes, filters
 
-from utils import get_book_by_qr, save_book, get_user_books, log_action, is_admin
+from utils import get_book_by_qr, save_book, get_user_books, log_action, is_admin, load_json, get_user
 from .start import USER_KEYBOARD, ADMIN_KEYBOARD, CANCEL_KEYBOARD, CANCEL_TEXT, cancel_action
 
 TAKE_QR, RETURN_QR = range(2)
@@ -81,6 +81,26 @@ async def my_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_text("\n".join(lines))
 
 
+async def list_all_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    books = load_json("books.json")
+    if not books:
+        await update.message.reply_text("Нет книг")
+        return
+    lines = []
+    for b in books:
+        if b.get("status") == "taken":
+            user = get_user(b.get("taken_by"))
+            if user:
+                account = f'{user.get("first_name", "")} {user.get("last_name", "")}'
+            else:
+                account = str(b.get("taken_by"))
+            status = f'взята {b.get("taken_date")}, {account.strip()}'
+        else:
+            status = "свободна"
+        lines.append(f'{b.get("title")}: {status}')
+    await update.message.reply_text("\n".join(lines))
+
+
 def get_handlers() -> list:
     return [
         ConversationHandler(
@@ -94,5 +114,6 @@ def get_handlers() -> list:
             fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📚 Мои книги$"), my_books),
+        MessageHandler(filters.Regex("^📖 Все книги$"), list_all_books),
     ]
 

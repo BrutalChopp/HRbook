@@ -11,11 +11,11 @@ CANCEL_KEYBOARD = ReplyKeyboardMarkup([[CANCEL_TEXT]], resize_keyboard=True, one
 LAST_NAME, FIRST_NAME, ORGANIZATION = range(3)
 
 USER_KEYBOARD = ReplyKeyboardMarkup(
-    [["🔍 Взять книгу", "📤 Вернуть книгу"], ["📚 Мои книги"]],
+    [["🔍 Взять книгу", "📤 Вернуть книгу"], ["📚 Мои книги"], ["📖 Все книги"]],
     resize_keyboard=True,
 )
 ADMIN_KEYBOARD = ReplyKeyboardMarkup(
-    [["➕ Добавить книгу", "📊 Отчёт по библиотеке"], ["🔁 Сброс книги", "👤 Список пользователей"]],
+    [["➕ Добавить книгу", "📊 Отчёт по библиотеке"], ["🔁 Сброс книги", "👤 Список пользователей"], ["📖 Все книги"]],
     resize_keyboard=True,
 )
 
