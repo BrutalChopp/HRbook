@@ -14,7 +14,11 @@ from telegram.ext import Application
 
 import config
 import utils
-from handlers.start import get_handler as start_handler, get_menu_handler
+from handlers.start import (
+    get_handler as start_handler,
+    get_menu_handler,
+    get_change_office_handler,
+)
 from handlers.books import get_handlers as books_handlers
 from handlers.admin import get_handlers as admin_handlers
 
@@ -32,7 +36,11 @@ async def app(tmp_path, monkeypatch):
     # minimal config
     monkeypatch.setattr(config, "BOT_TOKEN", "TEST")
     monkeypatch.setattr(config, "ADMIN_IDS", ["1"])
-    monkeypatch.setattr(config, "OFFICES", {"Main": {"admins": ["1"]}})
+    monkeypatch.setattr(
+        config,
+        "OFFICES",
+        {"Main": {"admins": ["1"]}, "Alt": {"admins": []}},
+    )
 
     sent_messages = []
 
@@ -59,6 +67,7 @@ async def app(tmp_path, monkeypatch):
     application = Application.builder().token("TEST").build()
     application.add_handler(start_handler())
     application.add_handler(get_menu_handler())
+    application.add_handler(get_change_office_handler())
     for h in books_handlers():
         application.add_handler(h)
     for h in admin_handlers():

@@ -5,7 +5,11 @@ import logging
 from telegram.ext import Application
 
 import config
-from handlers.start import get_handler as start_handler, get_menu_handler
+from handlers.start import (
+    get_handler as start_handler,
+    get_menu_handler,
+    get_change_office_handler,
+)
 from handlers.books import get_handlers as books_handlers
 from handlers.admin import get_handlers as admin_handlers
 
@@ -19,6 +23,7 @@ def main() -> None:
 
     application.add_handler(start_handler())
     application.add_handler(get_menu_handler())
+    application.add_handler(get_change_office_handler())
     for handler in books_handlers():
         application.add_handler(handler)
     for handler in admin_handlers():

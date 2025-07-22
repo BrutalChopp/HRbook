@@ -79,6 +79,19 @@ def register_user(
     return user
 
 
+def update_user_office(user_id: int, office: str) -> Optional[Dict[str, Any]]:
+    """Update the office for an existing user."""
+    users = load_json("users.json")
+    for usr in users:
+        if usr.get("telegram_id") == user_id:
+            usr["office"] = office
+            usr["role"] = "admin" if is_admin(user_id, office) else "user"
+            save_json("users.json", users)
+            log_action("update_office", {"user_id": user_id, "office": office})
+            return usr
+    return None
+
+
 def get_book_by_qr(qr: str) -> Optional[Dict[str, Any]]:
     books = load_json("books.json")
     for book in books:
