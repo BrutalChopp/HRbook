@@ -69,3 +69,14 @@ def get_handler() -> ConversationHandler:
         fallbacks=[],
     )
 
+
+async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send the main menu keyboard based on user role."""
+    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id) else USER_KEYBOARD
+    await update.message.reply_text("Главное меню", reply_markup=keyboard)
+
+
+def get_menu_handler() -> CommandHandler:
+    """Return handler for the /menu command."""
+    return CommandHandler("menu", main_menu)
+

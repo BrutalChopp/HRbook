@@ -20,7 +20,9 @@ Run the bot with:
 python main.py
 ```
 
-Users register via `/start` and can take or return books using the menu buttons. All data is stored in `data/users.json` and `data/books.json`.
+Users register via `/start` and can take or return books using the menu buttons.
+Use the `/menu` command at any time to show the main keyboard again.
+All data is stored in `data/users.json` and `data/books.json`.
 
 ## Project Structure
 
