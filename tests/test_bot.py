@@ -85,3 +85,19 @@ async def test_admin_operations(app):
         make_update(application, "➕ Добавить книгу", user_id=2)
     )
     assert sent[-1] == "Недостаточно прав."
+
+
+@pytest.mark.asyncio
+async def test_change_office(app):
+    application, sent, tmp = app
+    # register user
+    await application.process_update(make_update(application, "/start"))
+    await application.process_update(make_update(application, "Last"))
+    await application.process_update(make_update(application, "First"))
+    await application.process_update(make_update(application, "Main"))
+
+    await application.process_update(make_update(application, "🏢 Сменить офис"))
+    assert sent[-1] == "Выберите офис:"
+    await application.process_update(make_update(application, "Alt"))
+    data = json.loads((tmp / "users.json").read_text())
+    assert data[0]["office"] == "Alt"

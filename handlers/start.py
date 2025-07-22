@@ -4,7 +4,12 @@ from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, ContextTypes, filters
 
 import config
-from utils import get_user, register_user, is_admin
+from utils import (
+    get_user,
+    register_user,
+    is_admin,
+    update_user_office,
+)
 
 CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
 # Accept minor variations of the back button text so the handler works even if
@@ -29,10 +34,14 @@ def get_office_keyboard() -> ReplyKeyboardMarkup:
         one_time_keyboard=True,
     )
 
-LAST_NAME, FIRST_NAME, OFFICE = range(3)
+LAST_NAME, FIRST_NAME, OFFICE, NEW_OFFICE = range(4)
 
 USER_KEYBOARD = ReplyKeyboardMarkup(
-    [["🔍 Взять книгу", "📤 Вернуть книгу"], ["📚 Мои книги"], ["📖 Все книги"]],
+    [
+        ["🔍 Взять книгу", "📤 Вернуть книгу"],
+        ["📚 Мои книги", "🏢 Сменить офис"],
+        ["📖 Все книги"],
+    ],
     resize_keyboard=True,
 )
 ADMIN_KEYBOARD = ReplyKeyboardMarkup(
@@ -41,6 +50,7 @@ ADMIN_KEYBOARD = ReplyKeyboardMarkup(
         ["📚 Мои книги", "📖 Все книги"],
         ["➕ Добавить книгу", "📊 Отчёт по библиотеке"],
         ["🔁 Сброс книги", "👤 Список пользователей"],
+        ["🏢 Сменить офис"],
     ],
     resize_keyboard=True,
 )
@@ -114,6 +124,35 @@ async def get_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     return ConversationHandler.END
 
 
+async def change_office_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Initiate office change for an existing user."""
+    if not get_user(update.effective_user.id):
+        await update.message.reply_text(
+            "Сначала зарегистрируйтесь командой /start.", reply_markup=USER_KEYBOARD
+        )
+        return ConversationHandler.END
+    await update.message.reply_text(
+        "Выберите офис:", reply_markup=get_office_keyboard()
+    )
+    return NEW_OFFICE
+
+
+async def set_new_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    office = update.message.text.strip()
+    if office not in getattr(config, "OFFICES", {}):
+        await update.message.reply_text(
+            "Неверный офис, выберите из списка.", reply_markup=get_office_keyboard()
+        )
+        return NEW_OFFICE
+
+    update_user_office(update.effective_user.id, office)
+    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id, office) else USER_KEYBOARD
+    await update.message.reply_text(
+        "✅ Офис обновлён.", reply_markup=keyboard
+    )
+    return ConversationHandler.END
+
+
 def get_handler() -> ConversationHandler:
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
@@ -130,6 +169,19 @@ def get_handler() -> ConversationHandler:
                 MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
                 MessageHandler(filters.TEXT & ~filters.COMMAND, get_office),
             ],
+        },
+        fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
+    )
+
+
+def get_change_office_handler() -> ConversationHandler:
+    return ConversationHandler(
+        entry_points=[MessageHandler(filters.Regex("^🏢 Сменить офис$"), change_office_start)],
+        states={
+            NEW_OFFICE: [
+                MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, set_new_office),
+            ]
         },
         fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
     )
