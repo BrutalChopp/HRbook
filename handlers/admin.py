@@ -10,7 +10,12 @@ from utils import (
     get_book_by_qr,
     log_action,
 )
-from .start import ADMIN_KEYBOARD, CANCEL_KEYBOARD, CANCEL_TEXT, cancel_action
+from .start import (
+    ADMIN_KEYBOARD,
+    CANCEL_KEYBOARD,
+    CANCEL_RE,
+    cancel_action,
+)
 
 ADD_QR, ADD_TITLE, RESET_QR = range(3)
 
@@ -112,13 +117,13 @@ def get_handlers() -> list:
                 ADD_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_qr)],
                 ADD_TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_title)],
             },
-            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
+            fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📊 Отчёт по библиотеке$"), report),
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^🔁 Сброс книги$"), reset_book_start)],
             states={RESET_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, reset_book_get_qr)]},
-            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
+            fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^👤 Список пользователей$"), list_users),
     ]
