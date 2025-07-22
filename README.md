@@ -65,4 +65,12 @@ docker push cr.yandex/<registry>/<image>:<tag>
 Reference the pushed tag in your deployment configuration so that the correct
 image version is used.
 
+## Testing
+
+Run the unit tests with:
+
+```bash
+pytest
+```
+
 
