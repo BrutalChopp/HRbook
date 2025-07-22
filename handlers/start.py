@@ -10,7 +10,9 @@ CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
 # Accept minor variations of the back button text so the handler works even if
 # users type "Назад" manually or the arrow symbol differs.
 # Accept "Назад" typed manually or with the arrow from the button.
+
 CANCEL_RE = r"(?i).*назад.*"
+
 CANCEL_KEYBOARD = ReplyKeyboardMarkup(
     [[CANCEL_TEXT]], resize_keyboard=True, one_time_keyboard=True
 )
