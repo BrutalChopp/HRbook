@@ -3,4 +3,5 @@ opencv-python-headless
 python-dotenv
 qrcode
 psycopg2-binary
+pillow
 
