@@ -6,6 +6,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+import cv2
+import numpy as np
+
 import config
 
 DATA_DIR = Path(__file__).parent / "data"
@@ -120,6 +123,34 @@ def save_book(book: Dict[str, Any]) -> None:
     else:
         books.append(book)
     save_json("books.json", books)
+
+
+async def extract_qr_from_update(update, bot) -> Optional[str]:
+    """Return QR code text from a message if available.
+
+    The function first tries to read text or caption. If none is present, it will
+    attempt to decode a QR code from an attached image (photo or document).
+    """
+
+    message = update.effective_message
+    qr = (message.text or message.caption or "").strip()
+    if qr:
+        return qr
+
+    file = None
+    if message.photo:
+        file = await message.photo[-1].get_file()
+    elif message.document and message.document.mime_type and message.document.mime_type.startswith("image/"):
+        file = await message.document.get_file()
+
+    if not file:
+        return None
+
+    data = await file.download_as_bytearray()
+    img = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+    detector = cv2.QRCodeDetector()
+    decoded, _, _ = detector.detectAndDecode(img)
+    return decoded.strip() if decoded else None
 
 
 def log_action(action_type: str, data: Dict[str, Any]) -> None:

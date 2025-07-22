@@ -97,3 +97,20 @@ def make_update(app, text, user_id=1):
     )
     msg._bot = app.bot
     return telegram.Update(update_id=next(_id_gen), message=msg)
+
+
+def make_photo_update(app, user_id=1):
+    """Return an Update with a dummy photo message."""
+    user = User(id=user_id, is_bot=False, first_name="Test")
+    chat = Chat(id=user_id, type="private")
+    photo = telegram.PhotoSize(file_id="file-id", file_unique_id="file-uid", width=1, height=1)
+    photo._bot = app.bot
+    msg = Message(
+        message_id=next(_id_gen),
+        date=datetime.now(),
+        chat=chat,
+        from_user=user,
+        photo=[photo],
+    )
+    msg._bot = app.bot
+    return telegram.Update(update_id=next(_id_gen), message=msg)
