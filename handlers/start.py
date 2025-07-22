@@ -5,6 +5,9 @@ from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, Co
 
 from utils import get_user, register_user, is_admin
 
+CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
+CANCEL_KEYBOARD = ReplyKeyboardMarkup([[CANCEL_TEXT]], resize_keyboard=True, one_time_keyboard=True)
+
 LAST_NAME, FIRST_NAME, ORGANIZATION = range(3)
 
 USER_KEYBOARD = ReplyKeyboardMarkup(
@@ -17,28 +20,47 @@ ADMIN_KEYBOARD = ReplyKeyboardMarkup(
 )
 
 
+async def cancel_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Handle action cancellation and show the main menu."""
+    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id) else USER_KEYBOARD
+    await update.message.reply_text("Действие отменено.", reply_markup=keyboard)
+    return ConversationHandler.END
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
     user = get_user(user_id)
+    welcome = (
+        "\ud83d\udcda \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c \u0432 QR \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0443!\n"
+        "\u0417\u0434\u0435\u0441\u044c \u0432\u044b \u043c\u043e\u0436\u0435\u0442\u0435 \u0431\u0440\u0430\u0442\u044c \u0438 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044c \u043a\u043d\u0438\u0433\u0438 \u043f\u043e QR-\u043a\u043e\u0434\u0430\u043c."
+    )
+    await update.message.reply_text(welcome)
     if user:
         keyboard = ADMIN_KEYBOARD if is_admin(user_id) else USER_KEYBOARD
         await update.message.reply_text(
-            "С возвращением!", reply_markup=keyboard
+            "\u0421 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0435\u043d\u0438\u0435\u043c!", reply_markup=keyboard
         )
         return ConversationHandler.END
-    await update.message.reply_text("Добро пожаловать! Введите вашу фамилию:")
+    await update.message.reply_text(
+        "\u0412\u0432\u0435\u0434\u0438\u0442\u0435 \u0432\u0430\u0448\u0443 \u0444\u0430\u043c\u0438\u043b\u0438\u044e:",
+        reply_markup=CANCEL_KEYBOARD,
+    )
     return LAST_NAME
 
 
 async def get_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["last_name"] = update.message.text.strip()
-    await update.message.reply_text("Введите ваше имя:")
+    await update.message.reply_text(
+        "Введите ваше имя:", reply_markup=CANCEL_KEYBOARD
+    )
     return FIRST_NAME
 
 
 async def get_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["first_name"] = update.message.text.strip()
-    await update.message.reply_text("Введите организацию:")
+    await update.message.reply_text(
+        "Введите организацию:", reply_markup=CANCEL_KEYBOARD
+    )
     return ORGANIZATION
 
 
@@ -66,7 +88,7 @@ def get_handler() -> ConversationHandler:
             FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_name)],
             ORGANIZATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_organization)],
         },
-        fallbacks=[],
+        fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
     )
 
 
