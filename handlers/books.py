@@ -6,13 +6,15 @@ from telegram import Update
 from telegram.ext import ConversationHandler, MessageHandler, ContextTypes, filters
 
 from utils import get_book_by_qr, save_book, get_user_books, log_action, is_admin
-from .start import USER_KEYBOARD, ADMIN_KEYBOARD
+from .start import USER_KEYBOARD, ADMIN_KEYBOARD, CANCEL_KEYBOARD, CANCEL_TEXT, cancel_action
 
 TAKE_QR, RETURN_QR = range(2)
 
 
 async def take_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Отправьте QR-код книги:")
+    await update.message.reply_text(
+        "Отправьте QR-код книги:", reply_markup=CANCEL_KEYBOARD
+    )
     return TAKE_QR
 
 
@@ -40,7 +42,9 @@ async def take_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def return_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Отправьте QR-код книги для возврата:")
+    await update.message.reply_text(
+        "Отправьте QR-код книги для возврата:", reply_markup=CANCEL_KEYBOARD
+    )
     return RETURN_QR
 
 
@@ -82,12 +86,12 @@ def get_handlers() -> list:
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^🔍 Взять книгу$"), take_book_start)],
             states={TAKE_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_book_get_qr)]},
-            fallbacks=[],
+            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
         ),
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^📤 Вернуть книгу$"), return_book_start)],
             states={RETURN_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, return_book_get_qr)]},
-            fallbacks=[],
+            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📚 Мои книги$"), my_books),
     ]

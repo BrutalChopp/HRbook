@@ -21,7 +21,9 @@ python main.py
 ```
 
 Users register via `/start` and can take or return books using the menu buttons.
-Use the `/menu` command at any time to show the main keyboard again.
+When starting the bot you will see a short welcome message describing its purpose.
+During any step you can press the "↩️ Назад" button to cancel the current action
+and return to the main menu. Use the `/menu` command at any time to show the main keyboard again.
 All data is stored in `data/users.json` and `data/books.json`.
 
 ## Project Structure

@@ -10,7 +10,7 @@ from utils import (
     get_book_by_qr,
     log_action,
 )
-from .start import ADMIN_KEYBOARD
+from .start import ADMIN_KEYBOARD, CANCEL_KEYBOARD, CANCEL_TEXT, cancel_action
 
 ADD_QR, ADD_TITLE, RESET_QR = range(3)
 
@@ -19,7 +19,9 @@ async def add_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("Недостаточно прав.")
         return ConversationHandler.END
-    await update.message.reply_text("Отправьте QR-код новой книги:")
+    await update.message.reply_text(
+        "Отправьте QR-код новой книги:", reply_markup=CANCEL_KEYBOARD
+    )
     return ADD_QR
 
 
@@ -29,7 +31,9 @@ async def add_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         await update.message.reply_text("⚠️ Книга с таким QR уже существует.")
         return ConversationHandler.END
     context.user_data["qr"] = qr
-    await update.message.reply_text("Введите название книги:")
+    await update.message.reply_text(
+        "Введите название книги:", reply_markup=CANCEL_KEYBOARD
+    )
     return ADD_TITLE
 
 
@@ -67,7 +71,9 @@ async def reset_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("Недостаточно прав.")
         return ConversationHandler.END
-    await update.message.reply_text("QR-код книги для сброса:")
+    await update.message.reply_text(
+        "QR-код книги для сброса:", reply_markup=CANCEL_KEYBOARD
+    )
     return RESET_QR
 
 
@@ -106,13 +112,13 @@ def get_handlers() -> list:
                 ADD_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_qr)],
                 ADD_TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_title)],
             },
-            fallbacks=[],
+            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📊 Отчёт по библиотеке$"), report),
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^🔁 Сброс книги$"), reset_book_start)],
             states={RESET_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, reset_book_get_qr)]},
-            fallbacks=[],
+            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
         ),
         MessageHandler(filters.Regex("^👤 Список пользователей$"), list_users),
     ]
