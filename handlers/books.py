@@ -3,7 +3,12 @@ from __future__ import annotations
 from datetime import datetime
 
 from telegram import Update
-from telegram.ext import ConversationHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    ConversationHandler,
+    MessageHandler,
+    ContextTypes,
+    filters,
+)
 
 from utils import (
     get_book_by_qr,
@@ -36,7 +41,13 @@ async def take_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def take_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
-    qr = update.message.text.strip()
+    qr = (update.message.text or update.message.caption or "").strip()
+    if not qr:
+        await update.message.reply_text(
+            "Не удалось распознать QR-код. Отправьте текстовый код.",
+            reply_markup=CANCEL_KEYBOARD,
+        )
+        return TAKE_QR
     book = get_book_by_qr(qr)
     if not book:
         await update.message.reply_text("⚠️ Книга с таким QR не найдена.")
@@ -70,7 +81,13 @@ async def return_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def return_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
-    qr = update.message.text.strip()
+    qr = (update.message.text or update.message.caption or "").strip()
+    if not qr:
+        await update.message.reply_text(
+            "Не удалось распознать QR-код. Отправьте текстовый код.",
+            reply_markup=CANCEL_KEYBOARD,
+        )
+        return RETURN_QR
     book = get_book_by_qr(qr)
     if not book or book.get("taken_by") != update.effective_user.id or book.get("office") != office:
         await update.message.reply_text("⚠️ Эта книга не закреплена за вами.")
@@ -131,7 +148,7 @@ def get_handlers() -> list:
             states={
                 TAKE_QR: [
                     MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, take_book_get_qr),
+                    MessageHandler(~filters.COMMAND, take_book_get_qr),
                 ]
             },
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
@@ -141,7 +158,7 @@ def get_handlers() -> list:
             states={
                 RETURN_QR: [
                     MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, return_book_get_qr),
+                    MessageHandler(~filters.COMMAND, return_book_get_qr),
                 ]
             },
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
