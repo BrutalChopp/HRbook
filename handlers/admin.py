@@ -38,6 +38,7 @@ async def add_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     qr = update.message.text.strip()
     if get_book_by_qr(qr):
         await update.message.reply_text("⚠️ Книга с таким QR уже существует.")
+        await update.message.reply_text("Главное меню", reply_markup=ADMIN_KEYBOARD)
         return ConversationHandler.END
     context.user_data["qr"] = qr
     await update.message.reply_text(
