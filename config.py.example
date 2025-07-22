@@ -8,6 +8,12 @@ ADMIN_IDS = ["7007125219"]
 
 # Mapping of office name to administrator IDs
 OFFICES = {
+    "NaSemenovskoy": {"admins": []},
     "SokolGora": {"admins": ["1000131763"]},
-    
+    "Bolshaya32": {"admins": []},
+    "Central": {"admins": []},
+    "FizTechPark": {"admins": []},
+    "Erino": {"admins": []},
+    "OpenWorkshops": {"admins": []},
+    "ProjectOffice": {"admins": []},
 }
