@@ -1,0 +1,7 @@
+# Example configuration for QR Library Telegram Bot
+
+# Replace with your bot token obtained from BotFather
+BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
+
+# Comma-separated list or Python list of Telegram user IDs for admin access
+ADMIN_IDS = "123456789"

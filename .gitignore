@@ -1,0 +1,8 @@
+# Ignore configuration containing secrets
+config.py
+
+# Ignore compiled Python files
+*.pyc
+
+# Ignore JSON data files
+data/*.json
