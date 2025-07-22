@@ -25,6 +25,7 @@ When starting the bot you will see a short welcome message describing its purpos
 During any step you can press the "↩️ Назад" button to cancel the current action
 and return to the main menu. Use the `/menu` command at any time to show the main keyboard again.
 Use the "📖 Все книги" button to see a list of all books with their current status.
+Administrators receive additional menu options for managing the library: adding books, generating reports, resetting book status and viewing the list of users.
 All data is stored in `data/users.json` and `data/books.json`.
 
 ## Project Structure
