@@ -10,7 +10,7 @@ A simple Telegram bot to manage a paper book library using QR codes. Built with 
 pip install python-telegram-bot==20.*
 ```
 
-2. Edit `config.py` and set your bot token and administrator Telegram IDs.
+2. Edit `config.py` and set your bot token and list of administrator Telegram IDs (integers).
 
 ## Usage
 
@@ -29,7 +29,7 @@ All data is stored in `data/users.json` and `data/books.json`.
 - `main.py` – bot startup script.
 - `handlers/` – handlers for user and admin actions.
 - `data/` – JSON files with users and books.
-- `config.py` – configuration with bot token and admin IDs.
+- `config.py` – configuration with bot token and admin ID list.
 - `utils.py` – utility functions for data access and checks.
 
 
