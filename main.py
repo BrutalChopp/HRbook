@@ -23,7 +23,10 @@ def main() -> None:
     )
     application = Application.builder().token(config.BOT_TOKEN).build()
 
-    db.init_db()
+    try:
+        db.init_db()
+    except Exception as exc:
+        logging.error("Database unavailable: %s", exc)
 
     application.add_handler(start_handler())
     application.add_handler(get_menu_handler())
