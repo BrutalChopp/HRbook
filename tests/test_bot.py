@@ -149,3 +149,44 @@ async def test_take_book_photo(app, monkeypatch):
 
     await application.process_update(make_photo_update(application))
     assert any("успешно" in m for m in sent[-2:])
+
+
+@pytest.mark.asyncio
+async def test_add_book_photo(app, monkeypatch):
+    application, sent, tmp = app
+    # admin registration
+    await application.process_update(make_update(application, "/start", user_id=1))
+    await application.process_update(make_update(application, "Admin"))
+    await application.process_update(make_update(application, "User"))
+    await application.process_update(make_update(application, "Main"))
+
+    import qrcode
+    import io
+
+    img = qrcode.make("photoqr")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    data = buf.getvalue()
+
+    class FakeFile:
+        def __init__(self, data):
+            self.data = data
+
+        async def download_as_bytearray(self, *args, **kwargs):
+            return bytearray(self.data)
+
+    async def fake_get_file(self, file_id, *args, **kwargs):
+        return FakeFile(data)
+
+    monkeypatch.setattr(application.bot.__class__, "get_file", fake_get_file)
+
+    await application.process_update(make_update(application, "➕ Добавить книгу"))
+    assert sent[-1] == "Отправьте QR-код новой книги:"
+
+    await application.process_update(make_photo_update(application))
+    assert sent[-1] == "Введите название книги:"
+
+    await application.process_update(make_update(application, "Photo Book"))
+    books = json.loads((tmp / "books.json").read_text())
+    assert books[0]["qr_code"] == "photoqr"
+    assert books[0]["title"] == "Photo Book"

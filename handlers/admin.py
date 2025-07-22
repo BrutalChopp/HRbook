@@ -11,6 +11,7 @@ from utils import (
     log_action,
     get_books_by_office,
     get_user,
+    extract_qr_from_update,
 )
 from .start import (
     ADMIN_KEYBOARD,
@@ -35,7 +36,13 @@ async def add_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 
 async def add_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    qr = update.message.text.strip()
+    qr = await extract_qr_from_update(update, context.bot)
+    if not qr:
+        await update.message.reply_text(
+            "Не удалось распознать QR-код. Отправьте текстовый код.",
+            reply_markup=CANCEL_KEYBOARD,
+        )
+        return ADD_QR
     if get_book_by_qr(qr):
         await update.message.reply_text("⚠️ Книга с таким QR уже существует.")
         await update.message.reply_text("Главное меню", reply_markup=ADMIN_KEYBOARD)
@@ -135,7 +142,7 @@ def get_handlers() -> list:
             states={
                 ADD_QR: [
                     MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
-                    MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_qr),
+                    MessageHandler(~filters.COMMAND, add_book_get_qr),
                 ],
                 ADD_TITLE: [
                     MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
