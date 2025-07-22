@@ -1,2 +1,34 @@
-# HRbook
-HR Book
+# QR Library Telegram Bot
+
+A simple Telegram bot to manage a paper book library using QR codes. Built with `python-telegram-bot` 20+.
+
+## Installation
+
+1. Install Python dependencies:
+
+```bash
+pip install python-telegram-bot==20.*
+```
+
+2. Edit `config.py` and set your bot token and administrator Telegram IDs.
+
+## Usage
+
+Run the bot with:
+
+```bash
+python main.py
+```
+
+Users register via `/start` and can take or return books using the menu buttons. All data is stored in `data/users.json` and `data/books.json`.
+
+## Project Structure
+
+- `main.py` – bot startup script.
+- `handlers/` – handlers for user and admin actions.
+- `data/` – JSON files with users and books.
+- `config.py` – configuration with bot token and admin IDs.
+- `utils.py` – utility functions for data access and checks.
+
+
+
