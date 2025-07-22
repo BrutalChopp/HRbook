@@ -19,6 +19,7 @@ from utils import (
     load_json,
     get_user,
     get_books_by_office,
+    extract_qr_from_update,
 )
 from .start import (
     USER_KEYBOARD,
@@ -41,7 +42,7 @@ async def take_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 async def take_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
-    qr = (update.message.text or update.message.caption or "").strip()
+    qr = await extract_qr_from_update(update, context.bot)
     if not qr:
         await update.message.reply_text(
             "Не удалось распознать QR-код. Отправьте текстовый код.",
@@ -81,7 +82,7 @@ async def return_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 async def return_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
-    qr = (update.message.text or update.message.caption or "").strip()
+    qr = await extract_qr_from_update(update, context.bot)
     if not qr:
         await update.message.reply_text(
             "Не удалось распознать QR-код. Отправьте текстовый код.",

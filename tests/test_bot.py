@@ -4,6 +4,7 @@ import pytest
 from handlers.start import LAST_NAME, FIRST_NAME, OFFICE
 import utils
 from conftest import make_update
+from conftest import make_photo_update
 
 
 @pytest.mark.asyncio
@@ -101,3 +102,50 @@ async def test_change_office(app):
     await application.process_update(make_update(application, "Alt"))
     data = json.loads((tmp / "users.json").read_text())
     assert data[0]["office"] == "Alt"
+
+
+@pytest.mark.asyncio
+async def test_take_book_photo(app, monkeypatch):
+    application, sent, tmp = app
+    await application.process_update(make_update(application, "/start"))
+    await application.process_update(make_update(application, "Last"))
+    await application.process_update(make_update(application, "First"))
+    await application.process_update(make_update(application, "Main"))
+
+    books = [
+        {
+            "qr_code": "qr1",
+            "title": "Book",
+            "status": "available",
+            "taken_by": None,
+            "taken_date": None,
+            "office": "Main",
+        }
+    ]
+    (tmp / "books.json").write_text(json.dumps(books), encoding="utf-8")
+
+    import qrcode
+    import io
+
+    img = qrcode.make("qr1")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    data = buf.getvalue()
+
+    class FakeFile:
+        def __init__(self, data):
+            self.data = data
+
+        async def download_as_bytearray(self, *args, **kwargs):
+            return bytearray(self.data)
+
+    async def fake_get_file(self, file_id, *args, **kwargs):
+        return FakeFile(data)
+
+    monkeypatch.setattr(application.bot.__class__, "get_file", fake_get_file)
+
+    await application.process_update(make_update(application, "🔍 Взять книгу"))
+    assert sent[-1] == "Отправьте QR-код книги:"
+
+    await application.process_update(make_photo_update(application))
+    assert any("успешно" in m for m in sent[-2:])
