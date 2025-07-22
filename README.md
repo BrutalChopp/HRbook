@@ -4,10 +4,10 @@ A simple Telegram bot to manage a paper book library using QR codes. Built with 
 
 ## Installation
 
-1. Install Python dependencies:
+1. Install Python dependencies from `requirements.txt`:
 
 ```bash
-pip install python-telegram-bot==20.*
+pip install -r requirements.txt
 ```
 
 2. Edit `config.py` and set your bot token and administrator Telegram IDs.
