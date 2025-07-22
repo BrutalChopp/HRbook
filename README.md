@@ -10,7 +10,7 @@ A simple Telegram bot to manage a paper book library using QR codes. Built with 
 pip install -r requirements.txt
 ```
 
-2. Copy `config.py.example` to `config.py` and set your bot token and administrator Telegram IDs.
+2. Copy `.env.example` to `.env` and set your bot token and administrator Telegram IDs.
 
 ## Network Access
 
@@ -43,8 +43,8 @@ All data is stored in `data/users.json` and `data/books.json`.
 - `main.py` – bot startup script.
 - `handlers/` – handlers for user and admin actions.
 - `data/` – JSON files with users and books.
-- `config.py` – configuration with bot token and admin IDs.
-- `config.py.example` – template to create your own `config.py`.
+- `config.py` – loads configuration from environment variables.
+- `.env.example` – template to create your own `.env`.
 - `utils.py` – utility functions for data access and checks.
 
 ## Docker
