@@ -26,11 +26,23 @@ def save_json(filename: str, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def is_admin(user_id: int) -> bool:
-    return user_id in getattr(config, "ADMIN_IDS", [])
+def is_admin(user_id: int, office: Optional[str] = None) -> bool:
+    """Return True if the user is an admin globally or for the given office."""
+    admin_ids = [str(a) for a in getattr(config, "ADMIN_IDS", [])]
+    if str(user_id) in admin_ids:
+        return True
+    offices = getattr(config, "OFFICES", {})
+    if office:
+        office_admins = [str(a) for a in offices.get(office, {}).get("admins", [])]
+        return str(user_id) in office_admins
+    for info in offices.values():
+        if str(user_id) in [str(a) for a in info.get("admins", [])]:
+            return True
+    return False
 
 
 def get_user(user_id: int) -> Optional[Dict[str, Any]]:
+    """Return user data for the given Telegram ID."""
     users = load_json("users.json")
     for user in users:
         if user.get("telegram_id") == user_id:
@@ -38,14 +50,28 @@ def get_user(user_id: int) -> Optional[Dict[str, Any]]:
     return None
 
 
-def register_user(user_id: int, first_name: str, last_name: str, organization: str) -> Dict[str, Any]:
+def register_user(
+    user_id: int, first_name: str, last_name: str, office: str
+) -> Dict[str, Any]:
+    """Register a user or update their Telegram ID."""
     users = load_json("users.json")
+    for usr in users:
+        if (
+            usr.get("first_name") == first_name
+            and usr.get("last_name") == last_name
+            and usr.get("office") == office
+        ):
+            usr["telegram_id"] = user_id
+            save_json("users.json", users)
+            log_action("login_user", usr)
+            return usr
+
     user = {
         "telegram_id": user_id,
         "first_name": first_name,
         "last_name": last_name,
-        "organization": organization,
-        "role": "admin" if is_admin(user_id) else "user",
+        "office": office,
+        "role": "admin" if is_admin(user_id, office) else "user",
     }
     users.append(user)
     save_json("users.json", users)
@@ -64,6 +90,12 @@ def get_book_by_qr(qr: str) -> Optional[Dict[str, Any]]:
 def get_user_books(user_id: int) -> List[Dict[str, Any]]:
     books = load_json("books.json")
     return [b for b in books if b.get("taken_by") == user_id and b.get("status") == "taken"]
+
+
+def get_books_by_office(office: str) -> List[Dict[str, Any]]:
+    """Return all books stored in the given office."""
+    books = load_json("books.json")
+    return [b for b in books if b.get("office") == office]
 
 
 def save_book(book: Dict[str, Any]) -> None:

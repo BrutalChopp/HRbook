@@ -3,5 +3,11 @@
 # Replace with your bot token obtained from BotFather
 BOT_TOKEN = "YOUR_BOT_TOKEN_HERE"
 
-# Comma-separated list or Python list of Telegram user IDs for admin access
-ADMIN_IDS = "123456789"
+# List of global administrator Telegram IDs
+ADMIN_IDS = [123456789]
+
+# Mapping of office name to administrator IDs
+OFFICES = {
+    "Moscow": {"admins": [123456789]},
+    "Berlin": {"admins": [987654321]},
+}
