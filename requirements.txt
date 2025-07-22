@@ -2,4 +2,5 @@ python-telegram-bot==20.*
 opencv-python-headless
 python-dotenv
 qrcode
+psycopg2-binary
 
