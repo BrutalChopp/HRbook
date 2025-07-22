@@ -10,8 +10,16 @@ from dotenv import load_dotenv
 # Ensure environment variables are loaded when the application is started from
 # any working directory. We look for a ``.env`` file located next to this module
 # (i.e. in the project root) and load it if present.
-dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
-load_dotenv(dotenv_path)
+base_dir = os.path.dirname(__file__)
+dotenv_path = os.path.join(base_dir, ".env")
+example_path = os.path.join(base_dir, ".env.example")
+
+# Load variables from .env if present. If not, fall back to .env.example so the
+# bot can run with the example configuration out of the box.
+if os.path.exists(dotenv_path):
+    load_dotenv(dotenv_path)
+elif os.path.exists(example_path):
+    load_dotenv(example_path)
 
 
 def _parse_ids(value: str) -> List[str]:
