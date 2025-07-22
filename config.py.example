@@ -8,6 +8,6 @@ ADMIN_IDS = ["7007125219"]
 
 # Mapping of office name to administrator IDs
 OFFICES = {
-    "SokolGora": {"admins": [@Guseva_Ju]},
+    "SokolGora": {"admins": ["1000131763"]},
     
 }
