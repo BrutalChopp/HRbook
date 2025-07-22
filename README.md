@@ -12,6 +12,16 @@ pip install -r requirements.txt
 
 2. Copy `config.py.example` to `config.py` and set your bot token and administrator Telegram IDs.
 
+## Network Access
+
+This bot requires outgoing HTTPS access to `api.telegram.org`. If the domain is blocked you will see `NetworkError: httpx.ProxyError`.
+
+### Troubleshooting
+
+- Ensure the host or container has internet access.
+- Check that you can reach `https://api.telegram.org` using `curl` or similar.
+- Configure your proxy or firewall to allow outbound requests to this domain.
+
 ## Usage
 
 Run the bot with:
