@@ -6,7 +6,12 @@ from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, Co
 from utils import get_user, register_user, is_admin
 
 CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
-CANCEL_KEYBOARD = ReplyKeyboardMarkup([[CANCEL_TEXT]], resize_keyboard=True, one_time_keyboard=True)
+# Accept minor variations of the back button text so the handler works even if
+# users type "Назад" manually or the arrow symbol differs.
+CANCEL_RE = r"(?i)^\u21a9\ufe0f?\s*назад$"
+CANCEL_KEYBOARD = ReplyKeyboardMarkup(
+    [[CANCEL_TEXT]], resize_keyboard=True, one_time_keyboard=True
+)
 
 LAST_NAME, FIRST_NAME, ORGANIZATION = range(3)
 
@@ -88,7 +93,7 @@ def get_handler() -> ConversationHandler:
             FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_name)],
             ORGANIZATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_organization)],
         },
-        fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
+        fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
     )
 
 

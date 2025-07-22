@@ -6,7 +6,13 @@ from telegram import Update
 from telegram.ext import ConversationHandler, MessageHandler, ContextTypes, filters
 
 from utils import get_book_by_qr, save_book, get_user_books, log_action, is_admin, load_json, get_user
-from .start import USER_KEYBOARD, ADMIN_KEYBOARD, CANCEL_KEYBOARD, CANCEL_TEXT, cancel_action
+from .start import (
+    USER_KEYBOARD,
+    ADMIN_KEYBOARD,
+    CANCEL_KEYBOARD,
+    CANCEL_RE,
+    cancel_action,
+)
 
 TAKE_QR, RETURN_QR = range(2)
 
@@ -106,12 +112,12 @@ def get_handlers() -> list:
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^🔍 Взять книгу$"), take_book_start)],
             states={TAKE_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_book_get_qr)]},
-            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
+            fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^📤 Вернуть книгу$"), return_book_start)],
             states={RETURN_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, return_book_get_qr)]},
-            fallbacks=[MessageHandler(filters.Regex(f"^{CANCEL_TEXT}$"), cancel_action)],
+            fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📚 Мои книги$"), my_books),
         MessageHandler(filters.Regex("^📖 Все книги$"), list_all_books),
