@@ -132,15 +132,26 @@ def get_handlers() -> list:
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^➕ Добавить книгу$"), add_book_start)],
             states={
-                ADD_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_qr)],
-                ADD_TITLE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_title)],
+                ADD_QR: [
+                    MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_qr),
+                ],
+                ADD_TITLE: [
+                    MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, add_book_get_title),
+                ],
             },
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📊 Отчёт по библиотеке$"), report),
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^🔁 Сброс книги$"), reset_book_start)],
-            states={RESET_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, reset_book_get_qr)]},
+            states={
+                RESET_QR: [
+                    MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, reset_book_get_qr),
+                ]
+            },
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^👤 Список пользователей$"), list_users),
