@@ -9,6 +9,8 @@ from utils import (
     save_book,
     get_book_by_qr,
     log_action,
+    get_books_by_office,
+    get_user,
 )
 from .start import (
     ADMIN_KEYBOARD,
@@ -21,7 +23,9 @@ ADD_QR, ADD_TITLE, RESET_QR = range(3)
 
 
 async def add_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if not is_admin(update.effective_user.id):
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    if not is_admin(update.effective_user.id, office):
         await update.message.reply_text("Недостаточно прав.")
         return ConversationHandler.END
     await update.message.reply_text(
@@ -44,12 +48,15 @@ async def add_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def add_book_get_title(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     title = update.message.text.strip()
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
     book = {
         "qr_code": context.user_data.get("qr"),
         "title": title,
         "status": "available",
         "taken_by": None,
         "taken_date": None,
+        "office": office,
     }
     save_book(book)
     await update.message.reply_text("✅ Книга добавлена.")
@@ -59,9 +66,11 @@ async def add_book_get_title(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not is_admin(update.effective_user.id):
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    if not is_admin(update.effective_user.id, office):
         return
-    books = load_json("books.json")
+    books = get_books_by_office(office)
     lines = []
     for b in books:
         if b.get("status") == "taken":
@@ -73,7 +82,9 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def reset_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    if not is_admin(update.effective_user.id):
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    if not is_admin(update.effective_user.id, office):
         await update.message.reply_text("Недостаточно прав.")
         return ConversationHandler.END
     await update.message.reply_text(
@@ -83,10 +94,14 @@ async def reset_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def reset_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
     qr = update.message.text.strip()
     book = get_book_by_qr(qr)
     if not book:
         await update.message.reply_text("⚠️ Книга не найдена.")
+    elif book.get("office") != office:
+        await update.message.reply_text("⚠️ Эта книга находится в другом офисе.")
     else:
         book["status"] = "available"
         book["taken_by"] = None
@@ -99,12 +114,15 @@ async def reset_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if not is_admin(update.effective_user.id):
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    if not is_admin(update.effective_user.id, office):
         return
     users = load_json("users.json")
     lines = [
-        f'{u.get("last_name")} {u.get("first_name")} - {u.get("organization")}'
+        f'{u.get("last_name")} {u.get("first_name")} - {u.get("office")}'
         for u in users
+        if u.get("office") == office
     ]
     await update.message.reply_text("\n".join(lines) if lines else "Нет пользователей")
 

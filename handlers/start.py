@@ -3,6 +3,7 @@ from __future__ import annotations
 from telegram import ReplyKeyboardMarkup, Update
 from telegram.ext import CommandHandler, ConversationHandler, MessageHandler, ContextTypes, filters
 
+import config
 from utils import get_user, register_user, is_admin
 
 CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
@@ -13,7 +14,13 @@ CANCEL_KEYBOARD = ReplyKeyboardMarkup(
     [[CANCEL_TEXT]], resize_keyboard=True, one_time_keyboard=True
 )
 
-LAST_NAME, FIRST_NAME, ORGANIZATION = range(3)
+OFFICE_KEYBOARD = ReplyKeyboardMarkup(
+    [[name] for name in getattr(config, "OFFICES", {}).keys()] + [[CANCEL_TEXT]],
+    resize_keyboard=True,
+    one_time_keyboard=True,
+)
+
+LAST_NAME, FIRST_NAME, OFFICE = range(3)
 
 USER_KEYBOARD = ReplyKeyboardMarkup(
     [["🔍 Взять книгу", "📤 Вернуть книгу"], ["📚 Мои книги"], ["📖 Все книги"]],
@@ -27,7 +34,9 @@ ADMIN_KEYBOARD = ReplyKeyboardMarkup(
 
 async def cancel_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle action cancellation and show the main menu."""
-    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id) else USER_KEYBOARD
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id, office) else USER_KEYBOARD
     await update.message.reply_text("Действие отменено.", reply_markup=keyboard)
     return ConversationHandler.END
 
@@ -41,7 +50,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     )
     await update.message.reply_text(welcome)
     if user:
-        keyboard = ADMIN_KEYBOARD if is_admin(user_id) else USER_KEYBOARD
+        keyboard = ADMIN_KEYBOARD if is_admin(user_id, user.get("office")) else USER_KEYBOARD
         await update.message.reply_text(
             "\u0421 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0435\u043d\u0438\u0435\u043c!", reply_markup=keyboard
         )
@@ -64,21 +73,27 @@ async def get_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 async def get_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["first_name"] = update.message.text.strip()
     await update.message.reply_text(
-        "Введите организацию:", reply_markup=CANCEL_KEYBOARD
+        "Выберите офис:", reply_markup=OFFICE_KEYBOARD
     )
-    return ORGANIZATION
+    return OFFICE
 
 
-async def get_organization(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def get_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
-    org = update.message.text.strip()
-    register_user(
+    office = update.message.text.strip()
+    if office not in getattr(config, "OFFICES", {}):
+        await update.message.reply_text(
+            "Неверный офис, выберите из списка.", reply_markup=OFFICE_KEYBOARD
+        )
+        return OFFICE
+
+    user = register_user(
         user_id,
         context.user_data.get("first_name", ""),
         context.user_data.get("last_name", ""),
-        org,
+        office,
     )
-    keyboard = ADMIN_KEYBOARD if is_admin(user_id) else USER_KEYBOARD
+    keyboard = ADMIN_KEYBOARD if is_admin(user_id, office) else USER_KEYBOARD
     await update.message.reply_text(
         "✅ Регистрация успешна.", reply_markup=keyboard
     )
@@ -91,7 +106,7 @@ def get_handler() -> ConversationHandler:
         states={
             LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_last_name)],
             FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_name)],
-            ORGANIZATION: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_organization)],
+            OFFICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_office)],
         },
         fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
     )
@@ -99,7 +114,9 @@ def get_handler() -> ConversationHandler:
 
 async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send the main menu keyboard based on user role."""
-    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id) else USER_KEYBOARD
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id, office) else USER_KEYBOARD
     await update.message.reply_text("Главное меню", reply_markup=keyboard)
 
 
