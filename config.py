@@ -1,2 +1,2 @@
 BOT_TOKEN = "8155626371:AAFct2z_XvBaIfaYiNFdSnmuizPp9R0ITV4"
-ADMIN_IDS = [@BrutalChA]
+ADMIN_IDS = [BrutalChA]
