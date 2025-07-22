@@ -1,5 +1,6 @@
 # Ignore configuration containing secrets
 config.py
+.env
 
 # Ignore compiled Python files
 *.pyc
