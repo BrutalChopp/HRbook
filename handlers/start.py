@@ -9,16 +9,23 @@ from utils import get_user, register_user, is_admin
 CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
 # Accept minor variations of the back button text so the handler works even if
 # users type "Назад" manually or the arrow symbol differs.
-CANCEL_RE = r"(?i)^\u21a9\ufe0f?\s*назад$"
+# Accept "Назад" typed manually or with the arrow from the button.
+CANCEL_RE = r"(?i).*назад.*"
 CANCEL_KEYBOARD = ReplyKeyboardMarkup(
     [[CANCEL_TEXT]], resize_keyboard=True, one_time_keyboard=True
 )
 
-OFFICE_KEYBOARD = ReplyKeyboardMarkup(
-    [[name] for name in getattr(config, "OFFICES", {}).keys()] + [[CANCEL_TEXT]],
-    resize_keyboard=True,
-    one_time_keyboard=True,
-)
+
+def get_office_keyboard() -> ReplyKeyboardMarkup:
+    """Return a keyboard with available office names."""
+    offices = getattr(config, "OFFICES", {})
+    keyboard = [[name] for name in offices.keys()]
+    keyboard.append([CANCEL_TEXT])
+    return ReplyKeyboardMarkup(
+        keyboard,
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
 
 LAST_NAME, FIRST_NAME, OFFICE = range(3)
 
@@ -78,7 +85,7 @@ async def get_last_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 async def get_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     context.user_data["first_name"] = update.message.text.strip()
     await update.message.reply_text(
-        "Выберите офис:", reply_markup=OFFICE_KEYBOARD
+        "Выберите офис:", reply_markup=get_office_keyboard()
     )
     return OFFICE
 
@@ -88,7 +95,7 @@ async def get_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     office = update.message.text.strip()
     if office not in getattr(config, "OFFICES", {}):
         await update.message.reply_text(
-            "Неверный офис, выберите из списка.", reply_markup=OFFICE_KEYBOARD
+            "Неверный офис, выберите из списка.", reply_markup=get_office_keyboard()
         )
         return OFFICE
 
@@ -109,9 +116,18 @@ def get_handler() -> ConversationHandler:
     return ConversationHandler(
         entry_points=[CommandHandler("start", start)],
         states={
-            LAST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_last_name)],
-            FIRST_NAME: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_name)],
-            OFFICE: [MessageHandler(filters.TEXT & ~filters.COMMAND, get_office)],
+            LAST_NAME: [
+                MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_last_name),
+            ],
+            FIRST_NAME: [
+                MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_first_name),
+            ],
+            OFFICE: [
+                MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                MessageHandler(filters.TEXT & ~filters.COMMAND, get_office),
+            ],
         },
         fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
     )

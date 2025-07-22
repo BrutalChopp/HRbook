@@ -128,12 +128,22 @@ def get_handlers() -> list:
     return [
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^🔍 Взять книгу$"), take_book_start)],
-            states={TAKE_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, take_book_get_qr)]},
+            states={
+                TAKE_QR: [
+                    MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, take_book_get_qr),
+                ]
+            },
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         ConversationHandler(
             entry_points=[MessageHandler(filters.Regex("^📤 Вернуть книгу$"), return_book_start)],
-            states={RETURN_QR: [MessageHandler(filters.TEXT & ~filters.COMMAND, return_book_get_qr)]},
+            states={
+                RETURN_QR: [
+                    MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, return_book_get_qr),
+                ]
+            },
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^📚 Мои книги$"), my_books),
