@@ -7,7 +7,11 @@ from typing import List
 
 from dotenv import load_dotenv
 
-load_dotenv()
+# Ensure environment variables are loaded when the application is started from
+# any working directory. We look for a ``.env`` file located next to this module
+# (i.e. in the project root) and load it if present.
+dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+load_dotenv(dotenv_path)
 
 
 def _parse_ids(value: str) -> List[str]:
