@@ -37,5 +37,22 @@ All data is stored in `data/users.json` and `data/books.json`.
 - `config.py.example` – template to create your own `config.py`.
 - `utils.py` – utility functions for data access and checks.
 
+## Docker
+
+Build the image locally:
+
+```bash
+docker build -t hrbook:latest .
+```
+
+Tag the resulting image and push it to Yandex Container Registry:
+
+```bash
+docker tag hrbook:latest cr.yandex/<registry>/<image>:<tag>
+docker push cr.yandex/<registry>/<image>:<tag>
+```
+
+Reference the pushed tag in your deployment configuration so that the correct
+image version is used.
 
 
