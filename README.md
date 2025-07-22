@@ -4,7 +4,7 @@ A simple Telegram bot to manage a paper book library using QR codes. Built with 
 
 ## Installation
 
-1. Install Python dependencies from `requirements.txt`:
+1. Install Python dependencies from `requirements.txt` (this includes Pillow):
 
 ```bash
 pip install -r requirements.txt
