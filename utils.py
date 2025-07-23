@@ -65,19 +65,19 @@ def resolve_office_name(name: str) -> Optional[str]:
     return None
 
 
-async def get_user(user_id: int) -> Optional[Dict[str, Any]]:
+def get_user(user_id: int) -> Optional[Dict[str, Any]]:
     """Return user data for the given Telegram ID."""
-    return await db.get_user(user_id)
+    return db.get_user(user_id)
 
 
-async def register_user(
+def register_user(
     user_id: int, first_name: str, last_name: str, office: str
 ) -> Dict[str, Any]:
     """Register a user or update their Telegram ID."""
-    existing = await db.get_user_by_name(first_name, last_name, office)
+    existing = db.get_user_by_name(first_name, last_name, office)
     if existing:
         existing["telegram_id"] = user_id
-        await db.save_user(existing)
+        db.save_user(existing)
         log_action("login_user", existing)
         return existing
 
@@ -88,46 +88,46 @@ async def register_user(
         "office": office,
         "role": "admin" if is_admin(user_id, office) else "user",
     }
-    await db.save_user(user)
+    db.save_user(user)
     log_action("register_user", user)
     return user
 
 
-async def update_user_office(user_id: int, office: str) -> Optional[Dict[str, Any]]:
+def update_user_office(user_id: int, office: str) -> Optional[Dict[str, Any]]:
     """Update the office for an existing user."""
-    user = await db.get_user(user_id)
+    user = db.get_user(user_id)
     if not user:
         return None
     role = "admin" if is_admin(user_id, office) else "user"
-    await db.update_user_office(user_id, office, role)
+    db.update_user_office(user_id, office, role)
     user.update({"office": office, "role": role})
     log_action("update_office", {"user_id": user_id, "office": office})
     return user
 
 
-async def get_book_by_qr(qr: str) -> Optional[Dict[str, Any]]:
-    return await db.get_book_by_qr(qr)
+def get_book_by_qr(qr: str) -> Optional[Dict[str, Any]]:
+    return db.get_book_by_qr(qr)
 
 
-async def get_user_books(user_id: int) -> List[Dict[str, Any]]:
-    return await db.get_user_books(user_id)
+def get_user_books(user_id: int) -> List[Dict[str, Any]]:
+    return db.get_user_books(user_id)
 
 
-async def get_books_by_office(office: str) -> List[Dict[str, Any]]:
+def get_books_by_office(office: str) -> List[Dict[str, Any]]:
     """Return all books stored in the given office."""
-    return await db.get_books_by_office(office)
+    return db.get_books_by_office(office)
 
 
-async def save_book(book: Dict[str, Any]) -> None:
-    await db.save_book(book)
+def save_book(book: Dict[str, Any]) -> None:
+    db.save_book(book)
 
 
-async def get_all_users() -> List[Dict[str, Any]]:
-    return await db.get_all_users()
+def get_all_users() -> List[Dict[str, Any]]:
+    return db.get_all_users()
 
 
-async def delete_user(user_id: int) -> None:
-    await db.delete_user(user_id)
+def delete_user(user_id: int) -> None:
+    db.delete_user(user_id)
 
 
 async def extract_qr_from_update(update, bot) -> Optional[str]:

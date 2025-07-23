@@ -25,7 +25,7 @@ ADD_QR, ADD_TITLE, RESET_QR, REMOVE_USER = range(4)
 
 
 async def add_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     if not is_admin(update.effective_user.id, office):
         await update.message.reply_text("Недостаточно прав.")
@@ -44,7 +44,7 @@ async def add_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             reply_markup=CANCEL_KEYBOARD,
         )
         return ADD_QR
-    if await get_book_by_qr(qr):
+    if get_book_by_qr(qr):
         await update.message.reply_text("⚠️ Книга с таким QR уже существует.")
         await update.message.reply_text("Главное меню", reply_markup=ADMIN_KEYBOARD)
         return ConversationHandler.END
@@ -57,7 +57,7 @@ async def add_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 async def add_book_get_title(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     title = update.message.text.strip()
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     book = {
         "qr_code": context.user_data.get("qr"),
@@ -67,7 +67,7 @@ async def add_book_get_title(update: Update, context: ContextTypes.DEFAULT_TYPE)
         "taken_date": None,
         "office": office,
     }
-    await save_book(book)
+    save_book(book)
     await update.message.reply_text("✅ Книга добавлена.")
     log_action("add_book", book)
     await update.message.reply_text("Главное меню", reply_markup=ADMIN_KEYBOARD)
@@ -75,11 +75,11 @@ async def add_book_get_title(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     if not is_admin(update.effective_user.id, office):
         return
-    books = await get_books_by_office(office)
+    books = get_books_by_office(office)
     lines = []
     for b in books:
         if b.get("status") == "taken":
@@ -91,7 +91,7 @@ async def report(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def reset_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     if not is_admin(update.effective_user.id, office):
         await update.message.reply_text("Недостаточно прав.")
@@ -103,10 +103,10 @@ async def reset_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -
 
 
 async def reset_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     qr = update.message.text.strip()
-    book = await get_book_by_qr(qr)
+    book = get_book_by_qr(qr)
     if not book:
         await update.message.reply_text("⚠️ Книга не найдена.")
     elif book.get("office") != office:
@@ -115,7 +115,7 @@ async def reset_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) 
         book["status"] = "available"
         book["taken_by"] = None
         book["taken_date"] = None
-        await save_book(book)
+        save_book(book)
         await update.message.reply_text("✅ Статус книги сброшен.")
         log_action("reset_book", {"qr_code": qr})
     await update.message.reply_text("Главное меню", reply_markup=ADMIN_KEYBOARD)
@@ -123,11 +123,11 @@ async def reset_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     if not is_admin(update.effective_user.id, office):
         return
-    users = await get_all_users()
+    users = get_all_users()
     lines = [
         f'{u.get("last_name")} {u.get("first_name")} - {u.get("office")}'
         for u in users
@@ -137,7 +137,7 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
 
 async def remove_user_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = await get_user(update.effective_user.id)
+    user = get_user(update.effective_user.id)
     office = user.get("office") if user else None
     if not is_admin(update.effective_user.id, office):
         await update.message.reply_text("Недостаточно прав.")
@@ -156,12 +156,12 @@ async def remove_user_process(update: Update, context: ContextTypes.DEFAULT_TYPE
         )
         return REMOVE_USER
     target_id = int(user_id_text)
-    if not await get_user(target_id):
+    if not get_user(target_id):
         await update.message.reply_text(
             "Пользователь не найден.", reply_markup=ADMIN_KEYBOARD
         )
         return ConversationHandler.END
-    await delete_user(target_id)
+    delete_user(target_id)
     log_action("delete_user", {"user_id": target_id})
     await update.message.reply_text(
         "✅ Пользователь удалён.", reply_markup=ADMIN_KEYBOARD
