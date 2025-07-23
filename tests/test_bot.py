@@ -54,7 +54,7 @@ async def test_take_and_return_book(app):
     await application.process_update(make_update(application, "First"))
     await application.process_update(make_update(application, "Main"))
     # prepare book
-    utils.save_book(
+    await utils.save_book(
         {
             "qr_code": "qr1",
             "title": "Book",
@@ -136,7 +136,7 @@ async def test_take_book_photo(app, monkeypatch):
     await application.process_update(make_update(application, "First"))
     await application.process_update(make_update(application, "Main"))
 
-    utils.save_book(
+    await utils.save_book(
         {
             "qr_code": "qr1",
             "title": "Book",
