@@ -12,15 +12,12 @@ import telegram
 from telegram import User, Chat, Message, MessageEntity
 from telegram.ext import Application
 
+import importlib
 import config
 import utils
-from handlers.start import (
-    get_handler as start_handler,
-    get_menu_handler,
-    get_change_office_handler,
-)
-from handlers.books import get_handlers as books_handlers
-from handlers.admin import get_handlers as admin_handlers
+from handlers import start as start_module
+from handlers import books as books_module
+from handlers import admin as admin_module
 
 
 import pytest_asyncio
@@ -28,10 +25,23 @@ import pytest_asyncio
 
 @pytest_asyncio.fixture
 async def app(tmp_path, monkeypatch):
-    # configure temporary data directory
-    monkeypatch.setattr(utils, "DATA_DIR", tmp_path)
-    (tmp_path / "users.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "books.json").write_text("[]", encoding="utf-8")
+    monkeypatch.setenv("DB_ENGINE", "sqlite")
+    monkeypatch.setenv("DB_NAME", str(tmp_path / "test.db"))
+
+    import importlib
+    import db
+    import utils
+    import handlers.start as start_module
+    import handlers.books as books_module
+    import handlers.admin as admin_module
+
+    importlib.reload(db)
+    importlib.reload(utils)
+    importlib.reload(start_module)
+    importlib.reload(books_module)
+    importlib.reload(admin_module)
+
+    db.init_db()
 
     # minimal config
     monkeypatch.setattr(config, "BOT_TOKEN", "TEST")
@@ -65,12 +75,12 @@ async def app(tmp_path, monkeypatch):
     monkeypatch.setattr(telegram.Bot, "initialize", dummy_initialize)
 
     application = Application.builder().token("TEST").build()
-    application.add_handler(start_handler())
-    application.add_handler(get_menu_handler())
-    application.add_handler(get_change_office_handler())
-    for h in books_handlers():
+    application.add_handler(start_module.get_handler())
+    application.add_handler(start_module.get_menu_handler())
+    application.add_handler(start_module.get_change_office_handler())
+    for h in books_module.get_handlers():
         application.add_handler(h)
-    for h in admin_handlers():
+    for h in admin_module.get_handlers():
         application.add_handler(h)
 
     await application.initialize()

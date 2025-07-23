@@ -5,13 +5,13 @@ from telegram.ext import ConversationHandler, MessageHandler, ContextTypes, filt
 
 from utils import (
     is_admin,
-    load_json,
     save_book,
     get_book_by_qr,
     log_action,
     get_books_by_office,
     get_user,
     extract_qr_from_update,
+    get_all_users,
 )
 from .start import (
     ADMIN_KEYBOARD,
@@ -126,7 +126,7 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     office = user.get("office") if user else None
     if not is_admin(update.effective_user.id, office):
         return
-    users = load_json("users.json")
+    users = get_all_users()
     lines = [
         f'{u.get("last_name")} {u.get("first_name")} - {u.get("office")}'
         for u in users
