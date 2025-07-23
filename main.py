@@ -54,8 +54,9 @@ def main() -> None:
     atexit.register(release_lock)
     application = Application.builder().token(config.BOT_TOKEN).build()
 
+    import asyncio
     try:
-        db.init_db()
+        asyncio.run(db.init_db())
     except Exception as exc:
         logging.error("Database unavailable: %s", exc)
 

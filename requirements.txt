@@ -4,4 +4,6 @@ python-dotenv
 qrcode
 psycopg2-binary
 pillow
+aiosqlite
+asyncpg
 

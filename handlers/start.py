@@ -59,7 +59,7 @@ ADMIN_KEYBOARD = ReplyKeyboardMarkup(
 
 async def cancel_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Handle action cancellation and show the main menu."""
-    user = get_user(update.effective_user.id)
+    user = await get_user(update.effective_user.id)
     office = user.get("office") if user else None
     keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id, office) else USER_KEYBOARD
     await update.message.reply_text("Действие отменено.", reply_markup=keyboard)
@@ -68,7 +68,7 @@ async def cancel_action(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
-    user = get_user(user_id)
+    user = await get_user(user_id)
     welcome = (
         "\U0001F4DA \u0414\u043e\u0431\u0440\u043e \u043f\u043e\u0436\u0430\u043b\u043e\u0432\u0430\u0442\u044c \u0432 QR \u0431\u0438\u0431\u043b\u0438\u043e\u0442\u0435\u043a\u0443!\n"
         "\u0417\u0434\u0435\u0441\u044c \u0432\u044b \u043c\u043e\u0436\u0435\u0442\u0435 \u0431\u0440\u0430\u0442\u044c \u0438 \u0432\u043e\u0437\u0432\u0440\u0430\u0449\u0430\u0442\u044c \u043a\u043d\u0438\u0433\u0438 \u043f\u043e QR-\u043a\u043e\u0434\u0430\u043c."
@@ -113,7 +113,7 @@ async def get_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         )
         return OFFICE
 
-    user = register_user(
+    user = await register_user(
         user_id,
         context.user_data.get("first_name", ""),
         context.user_data.get("last_name", ""),
@@ -128,7 +128,7 @@ async def get_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 async def change_office_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Initiate office change for an existing user."""
-    if not get_user(update.effective_user.id):
+    if not await get_user(update.effective_user.id):
         await update.message.reply_text(
             "Сначала зарегистрируйтесь командой /start.", reply_markup=USER_KEYBOARD
         )
@@ -148,7 +148,7 @@ async def set_new_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         )
         return NEW_OFFICE
 
-    update_user_office(update.effective_user.id, office)
+    await update_user_office(update.effective_user.id, office)
     keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id, office) else USER_KEYBOARD
     await update.message.reply_text(
         "✅ Офис обновлён.", reply_markup=keyboard
@@ -192,7 +192,7 @@ def get_change_office_handler() -> ConversationHandler:
 
 async def main_menu(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send the main menu keyboard based on user role."""
-    user = get_user(update.effective_user.id)
+    user = await get_user(update.effective_user.id)
     office = user.get("office") if user else None
     keyboard = ADMIN_KEYBOARD if is_admin(update.effective_user.id, office) else USER_KEYBOARD
     await update.message.reply_text("Главное меню", reply_markup=keyboard)

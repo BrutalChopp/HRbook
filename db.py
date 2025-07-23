@@ -1,10 +1,10 @@
 import os
-from contextlib import contextmanager
 import logging
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-import psycopg2
-import sqlite3
+import aiosqlite
+import asyncpg
 
 # Load environment variables so database configuration works out of the box.
 # We first look for a `.env` file in the project root and load it if present.
@@ -34,17 +34,17 @@ else:
     DB_PORT = int(os.environ["DB_PORT"])
 
 
-@contextmanager
-def get_conn():
-    """Return a database connection context manager."""
+@asynccontextmanager
+async def get_conn():
+    """Return an asynchronous database connection context manager."""
     logging.info("Opening %s database connection", DB_ENGINE)
     conn = None
     try:
         if DB_ENGINE == "sqlite":
-            conn = sqlite3.connect(DB_NAME)
+            conn = await aiosqlite.connect(DB_NAME)
         else:
-            conn = psycopg2.connect(
-                dbname=DB_NAME,
+            conn = await asyncpg.connect(
+                database=DB_NAME,
                 user=DB_USER,
                 password=DB_PASSWORD,
                 host=DB_HOST,
@@ -57,30 +57,20 @@ def get_conn():
         raise
     finally:
         if conn:
-            conn.close()
+            await conn.close()
             logging.info("Database connection closed")
 
 
-def init_db() -> None:
+async def init_db() -> None:
     """Create required tables if they do not exist."""
-    with get_conn() as conn:
-        cur = conn.cursor()
+    async with get_conn() as conn:
+        cur = conn
         id_column = (
             "INTEGER PRIMARY KEY AUTOINCREMENT"
             if DB_ENGINE == "sqlite"
             else "SERIAL PRIMARY KEY"
         )
-        cur.execute(
-            f"""
-            CREATE TABLE IF NOT EXISTS messages (
-                id {id_column},
-                user_id BIGINT,
-                text TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-            """
-        )
-        cur.execute(
+        await cur.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
                 telegram_id BIGINT PRIMARY KEY,
@@ -91,7 +81,7 @@ def init_db() -> None:
             )
             """
         )
-        cur.execute(
+        await cur.execute(
             """
             CREATE TABLE IF NOT EXISTS books (
                 qr_code TEXT PRIMARY KEY,
@@ -103,36 +93,25 @@ def init_db() -> None:
             )
             """
         )
-        conn.commit()
+        if DB_ENGINE == "sqlite":
+            await conn.commit()
 
 
-def save_message(user_id: int, text: str) -> None:
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"INSERT INTO messages (user_id, text) VALUES ({placeholder}, {placeholder})",
-            (user_id, text),
-        )
-        conn.commit()
 
 
-def delete_all_messages() -> None:
-    with get_conn() as conn:
-        cur = conn.cursor()
-        cur.execute("DELETE FROM messages")
-        conn.commit()
-
-
-def get_user(telegram_id: int):
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"SELECT telegram_id, first_name, last_name, office, role FROM users WHERE telegram_id = {placeholder}",
-            (telegram_id,),
-        )
-        row = cur.fetchone()
+async def get_user(telegram_id: int):
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            cur = await conn.execute(
+                "SELECT telegram_id, first_name, last_name, office, role FROM users WHERE telegram_id = ?",
+                (telegram_id,),
+            )
+            row = await cur.fetchone()
+        else:
+            row = await conn.fetchrow(
+                "SELECT telegram_id, first_name, last_name, office, role FROM users WHERE telegram_id = $1",
+                telegram_id,
+            )
     if not row:
         return None
     return {
@@ -144,15 +123,21 @@ def get_user(telegram_id: int):
     }
 
 
-def get_user_by_name(first_name: str, last_name: str, office: str):
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"SELECT telegram_id, first_name, last_name, office, role FROM users WHERE first_name = {placeholder} AND last_name = {placeholder} AND office = {placeholder}",
-            (first_name, last_name, office),
-        )
-        row = cur.fetchone()
+async def get_user_by_name(first_name: str, last_name: str, office: str):
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            cur = await conn.execute(
+                "SELECT telegram_id, first_name, last_name, office, role FROM users WHERE first_name = ? AND last_name = ? AND office = ?",
+                (first_name, last_name, office),
+            )
+            row = await cur.fetchone()
+        else:
+            row = await conn.fetchrow(
+                "SELECT telegram_id, first_name, last_name, office, role FROM users WHERE first_name = $1 AND last_name = $2 AND office = $3",
+                first_name,
+                last_name,
+                office,
+            )
     if not row:
         return None
     return {
@@ -164,60 +149,90 @@ def get_user_by_name(first_name: str, last_name: str, office: str):
     }
 
 
-def save_user(user: dict) -> None:
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"""
-            INSERT INTO users (telegram_id, first_name, last_name, office, role)
-            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
-            ON CONFLICT(telegram_id) DO UPDATE SET
-                first_name=excluded.first_name,
-                last_name=excluded.last_name,
-                office=excluded.office,
-                role=excluded.role
-            """,
-            (
+async def save_user(user: dict) -> None:
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            await conn.execute(
+                """
+                INSERT INTO users (telegram_id, first_name, last_name, office, role)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(telegram_id) DO UPDATE SET
+                    first_name=excluded.first_name,
+                    last_name=excluded.last_name,
+                    office=excluded.office,
+                    role=excluded.role
+                """,
+                (
+                    user.get("telegram_id"),
+                    user.get("first_name"),
+                    user.get("last_name"),
+                    user.get("office"),
+                    user.get("role"),
+                ),
+            )
+            await conn.commit()
+        else:
+            await conn.execute(
+                """
+                INSERT INTO users (telegram_id, first_name, last_name, office, role)
+                VALUES ($1, $2, $3, $4, $5)
+                ON CONFLICT (telegram_id) DO UPDATE SET
+                    first_name=excluded.first_name,
+                    last_name=excluded.last_name,
+                    office=excluded.office,
+                    role=excluded.role
+                """,
                 user.get("telegram_id"),
                 user.get("first_name"),
                 user.get("last_name"),
                 user.get("office"),
                 user.get("role"),
-            ),
-        )
-        conn.commit()
+            )
 
 
-def update_user_office(telegram_id: int, office: str, role: str) -> None:
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"UPDATE users SET office = {placeholder}, role = {placeholder} WHERE telegram_id = {placeholder}",
-            (office, role, telegram_id),
-        )
-        conn.commit()
+async def update_user_office(telegram_id: int, office: str, role: str) -> None:
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            await conn.execute(
+                "UPDATE users SET office = ?, role = ? WHERE telegram_id = ?",
+                (office, role, telegram_id),
+            )
+            await conn.commit()
+        else:
+            await conn.execute(
+                "UPDATE users SET office = $1, role = $2 WHERE telegram_id = $3",
+                office,
+                role,
+                telegram_id,
+            )
 
 
-def delete_user(telegram_id: int) -> None:
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"DELETE FROM users WHERE telegram_id = {placeholder}",
-            (telegram_id,),
-        )
-        conn.commit()
+async def delete_user(telegram_id: int) -> None:
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            await conn.execute(
+                "DELETE FROM users WHERE telegram_id = ?",
+                (telegram_id,),
+            )
+            await conn.commit()
+        else:
+            await conn.execute(
+                "DELETE FROM users WHERE telegram_id = $1",
+                telegram_id,
+            )
 
 
-def get_all_users():
-    with get_conn() as conn:
-        cur = conn.cursor()
-        cur.execute(
-            "SELECT telegram_id, first_name, last_name, office, role FROM users"
-        )
-        rows = cur.fetchall()
+async def get_all_users():
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            cur = await conn.execute(
+                "SELECT telegram_id, first_name, last_name, office, role FROM users"
+            )
+            rows = await cur.fetchall()
+        else:
+            rows = await conn.fetch(
+                "SELECT telegram_id, first_name, last_name, office, role FROM users"
+            )
     return [
         {
             "telegram_id": r[0],
@@ -230,15 +245,19 @@ def get_all_users():
     ]
 
 
-def get_book_by_qr(qr: str):
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE qr_code = {placeholder}",
-            (qr,),
-        )
-        row = cur.fetchone()
+async def get_book_by_qr(qr: str):
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            cur = await conn.execute(
+                "SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE qr_code = ?",
+                (qr,),
+            )
+            row = await cur.fetchone()
+        else:
+            row = await conn.fetchrow(
+                "SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE qr_code = $1",
+                qr,
+            )
     if not row:
         return None
     return {
@@ -251,42 +270,64 @@ def get_book_by_qr(qr: str):
     }
 
 
-def save_book(book: dict) -> None:
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"""
-            INSERT INTO books (qr_code, title, status, taken_by, taken_date, office)
-            VALUES ({placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder}, {placeholder})
-            ON CONFLICT(qr_code) DO UPDATE SET
-                title=excluded.title,
-                status=excluded.status,
-                taken_by=excluded.taken_by,
-                taken_date=excluded.taken_date,
-                office=excluded.office
-            """,
-            (
+async def save_book(book: dict) -> None:
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            await conn.execute(
+                """
+                INSERT INTO books (qr_code, title, status, taken_by, taken_date, office)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(qr_code) DO UPDATE SET
+                    title=excluded.title,
+                    status=excluded.status,
+                    taken_by=excluded.taken_by,
+                    taken_date=excluded.taken_date,
+                    office=excluded.office
+                """,
+                (
+                    book.get("qr_code"),
+                    book.get("title"),
+                    book.get("status"),
+                    book.get("taken_by"),
+                    book.get("taken_date"),
+                    book.get("office"),
+                ),
+            )
+            await conn.commit()
+        else:
+            await conn.execute(
+                """
+                INSERT INTO books (qr_code, title, status, taken_by, taken_date, office)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT(qr_code) DO UPDATE SET
+                    title=excluded.title,
+                    status=excluded.status,
+                    taken_by=excluded.taken_by,
+                    taken_date=excluded.taken_date,
+                    office=excluded.office
+                """,
                 book.get("qr_code"),
                 book.get("title"),
                 book.get("status"),
                 book.get("taken_by"),
                 book.get("taken_date"),
                 book.get("office"),
-            ),
-        )
-        conn.commit()
+            )
 
 
-def get_user_books(user_id: int):
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE taken_by = {placeholder} AND status = 'taken'",
-            (user_id,),
-        )
-        rows = cur.fetchall()
+async def get_user_books(user_id: int):
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            cur = await conn.execute(
+                "SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE taken_by = ? AND status = 'taken'",
+                (user_id,),
+            )
+            rows = await cur.fetchall()
+        else:
+            rows = await conn.fetch(
+                "SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE taken_by = $1 AND status = 'taken'",
+                user_id,
+            )
     return [
         {
             "qr_code": r[0],
@@ -300,15 +341,19 @@ def get_user_books(user_id: int):
     ]
 
 
-def get_books_by_office(office: str):
-    with get_conn() as conn:
-        cur = conn.cursor()
-        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
-        cur.execute(
-            f"SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE office = {placeholder}",
-            (office,),
-        )
-        rows = cur.fetchall()
+async def get_books_by_office(office: str):
+    async with get_conn() as conn:
+        if DB_ENGINE == "sqlite":
+            cur = await conn.execute(
+                "SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE office = ?",
+                (office,),
+            )
+            rows = await cur.fetchall()
+        else:
+            rows = await conn.fetch(
+                "SELECT qr_code, title, status, taken_by, taken_date, office FROM books WHERE office = $1",
+                office,
+            )
     return [
         {
             "qr_code": r[0],

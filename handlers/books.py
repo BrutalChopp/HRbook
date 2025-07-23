@@ -39,7 +39,7 @@ async def take_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
 
 
 async def take_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = get_user(update.effective_user.id)
+    user = await get_user(update.effective_user.id)
     office = user.get("office") if user else None
     qr = await extract_qr_from_update(update, context.bot)
     if not qr:
@@ -48,7 +48,7 @@ async def take_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -
             reply_markup=CANCEL_KEYBOARD,
         )
         return TAKE_QR
-    book = get_book_by_qr(qr)
+    book = await get_book_by_qr(qr)
     if not book:
         await update.message.reply_text("⚠️ Книга с таким QR не найдена.")
     elif book.get("office") != office:
@@ -59,7 +59,7 @@ async def take_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -
         book["status"] = "taken"
         book["taken_by"] = update.effective_user.id
         book["taken_date"] = datetime.now().strftime("%Y-%m-%d")
-        save_book(book)
+        await save_book(book)
         await update.message.reply_text(
             f'✅ Книга "{book.get("title")}" успешно закреплена за вами.'
         )
@@ -79,7 +79,7 @@ async def return_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) 
 
 
 async def return_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user = get_user(update.effective_user.id)
+    user = await get_user(update.effective_user.id)
     office = user.get("office") if user else None
     qr = await extract_qr_from_update(update, context.bot)
     if not qr:
@@ -88,14 +88,14 @@ async def return_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE)
             reply_markup=CANCEL_KEYBOARD,
         )
         return RETURN_QR
-    book = get_book_by_qr(qr)
+    book = await get_book_by_qr(qr)
     if not book or book.get("taken_by") != update.effective_user.id or book.get("office") != office:
         await update.message.reply_text("⚠️ Эта книга не закреплена за вами.")
     else:
         book["status"] = "available"
         book["taken_by"] = None
         book["taken_date"] = None
-        save_book(book)
+        await save_book(book)
         await update.message.reply_text(
             f'✅ Книга "{book.get("title")}" возвращена.'
         )
@@ -108,7 +108,7 @@ async def return_book_get_qr(update: Update, context: ContextTypes.DEFAULT_TYPE)
 
 
 async def my_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    books = get_user_books(update.effective_user.id)
+    books = await get_user_books(update.effective_user.id)
     if not books:
         await update.message.reply_text("У вас нет взятых книг.")
         return
@@ -120,16 +120,16 @@ async def my_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def list_all_books(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    user = get_user(update.effective_user.id)
+    user = await get_user(update.effective_user.id)
     office = user.get("office") if user else None
-    books = get_books_by_office(office)
+    books = await get_books_by_office(office)
     if not books:
         await update.message.reply_text("Нет книг")
         return
     lines = []
     for b in books:
         if b.get("status") == "taken":
-            user = get_user(b.get("taken_by"))
+            user = await get_user(b.get("taken_by"))
             if user:
                 account = f'{user.get("first_name", "")} {user.get("last_name", "")}'
             else:

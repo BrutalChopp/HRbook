@@ -41,7 +41,7 @@ async def app(tmp_path, monkeypatch):
     importlib.reload(books_module)
     importlib.reload(admin_module)
 
-    db.init_db()
+    await db.init_db()
 
     # minimal config
     monkeypatch.setattr(config, "BOT_TOKEN", "TEST")
