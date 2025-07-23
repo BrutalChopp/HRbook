@@ -73,4 +73,12 @@ Run the unit tests with:
 pytest
 ```
 
+## Avoiding 409 Conflict Errors
+
+Telegram returns `409 Conflict` if more than one instance of the bot polls for
+updates using the same token. The startup script now creates a lock file at
+`/tmp/hrbook_bot.lock` to ensure only a single bot process runs. If you see an
+error similar to `terminated by other getUpdates request`, make sure no other
+process is running and remove the lock file if necessary.
+
 
