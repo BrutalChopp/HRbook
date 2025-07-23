@@ -12,6 +12,7 @@ from utils import (
     get_user,
     extract_qr_from_update,
     get_all_users,
+    delete_user,
 )
 from .start import (
     ADMIN_KEYBOARD,
@@ -20,7 +21,7 @@ from .start import (
     cancel_action,
 )
 
-ADD_QR, ADD_TITLE, RESET_QR = range(3)
+ADD_QR, ADD_TITLE, RESET_QR, REMOVE_USER = range(4)
 
 
 async def add_book_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
@@ -135,6 +136,39 @@ async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     await update.message.reply_text("\n".join(lines) if lines else "Нет пользователей")
 
 
+async def remove_user_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user = get_user(update.effective_user.id)
+    office = user.get("office") if user else None
+    if not is_admin(update.effective_user.id, office):
+        await update.message.reply_text("Недостаточно прав.")
+        return ConversationHandler.END
+    await update.message.reply_text(
+        "ID пользователя для удаления:", reply_markup=CANCEL_KEYBOARD
+    )
+    return REMOVE_USER
+
+
+async def remove_user_process(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id_text = update.message.text.strip()
+    if not user_id_text.isdigit():
+        await update.message.reply_text(
+            "Введите числовой ID.", reply_markup=CANCEL_KEYBOARD
+        )
+        return REMOVE_USER
+    target_id = int(user_id_text)
+    if not get_user(target_id):
+        await update.message.reply_text(
+            "Пользователь не найден.", reply_markup=ADMIN_KEYBOARD
+        )
+        return ConversationHandler.END
+    delete_user(target_id)
+    log_action("delete_user", {"user_id": target_id})
+    await update.message.reply_text(
+        "✅ Пользователь удалён.", reply_markup=ADMIN_KEYBOARD
+    )
+    return ConversationHandler.END
+
+
 def get_handlers() -> list:
     return [
         ConversationHandler(
@@ -163,5 +197,15 @@ def get_handlers() -> list:
             fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
         ),
         MessageHandler(filters.Regex("^👤 Список пользователей$"), list_users),
+        ConversationHandler(
+            entry_points=[MessageHandler(filters.Regex("^🗑 Удалить пользователя$"), remove_user_start)],
+            states={
+                REMOVE_USER: [
+                    MessageHandler(filters.Regex(CANCEL_RE), cancel_action),
+                    MessageHandler(filters.TEXT & ~filters.COMMAND, remove_user_process),
+                ]
+            },
+            fallbacks=[MessageHandler(filters.Regex(CANCEL_RE), cancel_action)],
+        ),
     ]
 
