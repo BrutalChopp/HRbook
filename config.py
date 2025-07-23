@@ -43,20 +43,44 @@ def _office_admins(name: str) -> List[str]:
 
 OFFICES = {
     # Офис ГК «ОСНОВА» – Москва, ул. Малая Семёновская, д. 9, стр. 3, 2 этаж
-    "NaSemenovskoy": {"admins": _office_admins("NaSemenovskoy")},
+    "NaSemenovskoy": {
+        "name": "На Семёновской",
+        "admins": _office_admins("NaSemenovskoy"),
+    },
     # ООО «БитРу», пл. Семёновская, 1а, 11 этаж БЦ «Соколиная Гора"
     # Используется короткое имя SokolGora
-    "SokolGora": {"admins": _office_admins("SokolGora")},
+    "SokolGora": {
+        "name": "Соколиная Гора",
+        "admins": _office_admins("SokolGora"),
+    },
     # Офис ГК «ОСНОВА» – Москва, ул. Большая Семёновская, д. 32, 3 этаж
-    "Bolshaya32": {"admins": _office_admins("Bolshaya32")},
+    "Bolshaya32": {
+        "name": "Большая 32",
+        "admins": _office_admins("Bolshaya32"),
+    },
     # Центральный офис ГК «ОСНОВА» – Москва, ул. Большая Семёновская, д. 32/7, 2 этаж
-    "Central": {"admins": _office_admins("Central")},
+    "Central": {
+        "name": "Центральный",
+        "admins": _office_admins("Central"),
+    },
     # IT-Технопарк «ФизТехПарк» – Москва, ш. Долгопрудненское, д. 3
-    "FizTechPark": {"admins": _office_admins("FizTechPark")},
+    "FizTechPark": {
+        "name": "ФизТехПарк",
+        "admins": _office_admins("FizTechPark"),
+    },
     # Курорт «ЕРИНО» – поселок Ерино, микрорайон Санаторий, д. 1, стр. 5
-    "Erino": {"admins": _office_admins("Erino")},
+    "Erino": {
+        "name": "Ерино",
+        "admins": _office_admins("Erino"),
+    },
     # ООО «Открытые мастерские» – Москва, ул. Электрозаводская, д. 27, стр. 8
-    "OpenWorkshops": {"admins": _office_admins("OpenWorkshops")},
+    "OpenWorkshops": {
+        "name": "Открытые мастерские",
+        "admins": _office_admins("OpenWorkshops"),
+    },
     # Проектный офис ГК «ОСНОВА» – Москва, ул. Электрозаводская, д. 27, стр. 2
-    "ProjectOffice": {"admins": _office_admins("ProjectOffice")},
+    "ProjectOffice": {
+        "name": "Проектный офис",
+        "admins": _office_admins("ProjectOffice"),
+    },
 }

@@ -27,7 +27,7 @@ CANCEL_KEYBOARD = ReplyKeyboardMarkup(
 def get_office_keyboard() -> ReplyKeyboardMarkup:
     """Return a keyboard with available office names."""
     offices = getattr(config, "OFFICES", {})
-    keyboard = [[name] for name in offices.keys()]
+    keyboard = [[info.get("name", key)] for key, info in offices.items()]
     keyboard.append([CANCEL_TEXT])
     return ReplyKeyboardMarkup(
         keyboard,
