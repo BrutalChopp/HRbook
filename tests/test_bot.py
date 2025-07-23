@@ -27,6 +27,19 @@ async def test_registration_flow(app):
 
 
 @pytest.mark.asyncio
+async def test_registration_office_case_insensitive(app):
+    application, sent, tmp = app
+    await application.process_update(make_update(application, "/start"))
+    await application.process_update(make_update(application, "Last"))
+    await application.process_update(make_update(application, "First"))
+    assert sent[-1] == "Выберите офис:"
+    await application.process_update(make_update(application, "main"))
+    assert sent[-1] == "✅ Регистрация успешна."
+    data = json.loads((tmp / "users.json").read_text())
+    assert data[0]["office"] == "Main"
+
+
+@pytest.mark.asyncio
 async def test_take_and_return_book(app):
     application, sent, tmp = app
     # register user
