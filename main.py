@@ -59,6 +59,7 @@ def main() -> None:
         asyncio.run(db.init_db())
     except Exception as exc:
         logging.error("Database unavailable: %s", exc)
+    asyncio.set_event_loop(asyncio.new_event_loop())
 
     application.add_handler(start_handler())
     application.add_handler(get_menu_handler())
