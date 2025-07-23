@@ -9,6 +9,7 @@ from utils import (
     register_user,
     is_admin,
     update_user_office,
+    resolve_office_name,
 )
 
 CANCEL_TEXT = "\u21a9\ufe0f \u041d\u0430\u0437\u0430\u0434"
@@ -104,8 +105,9 @@ async def get_first_name(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
 
 async def get_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     user_id = update.effective_user.id
-    office = update.message.text.strip()
-    if office not in getattr(config, "OFFICES", {}):
+    office_input = update.message.text.strip()
+    office = resolve_office_name(office_input)
+    if not office:
         await update.message.reply_text(
             "Неверный офис, выберите из списка.", reply_markup=get_office_keyboard()
         )
@@ -138,8 +140,9 @@ async def change_office_start(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 
 async def set_new_office(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    office = update.message.text.strip()
-    if office not in getattr(config, "OFFICES", {}):
+    office_input = update.message.text.strip()
+    office = resolve_office_name(office_input)
+    if not office:
         await update.message.reply_text(
             "Неверный офис, выберите из списка.", reply_markup=get_office_keyboard()
         )

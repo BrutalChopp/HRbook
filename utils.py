@@ -44,6 +44,16 @@ def is_admin(user_id: int, office: Optional[str] = None) -> bool:
     return False
 
 
+def resolve_office_name(name: str) -> Optional[str]:
+    """Return canonical office key matching the provided text."""
+    offices = getattr(config, "OFFICES", {})
+    name_clean = name.strip().lower()
+    for office in offices.keys():
+        if office.lower() == name_clean:
+            return office
+    return None
+
+
 def get_user(user_id: int) -> Optional[Dict[str, Any]]:
     """Return user data for the given Telegram ID."""
     users = load_json("users.json")
