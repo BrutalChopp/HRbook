@@ -126,6 +126,10 @@ def get_all_users() -> List[Dict[str, Any]]:
     return db.get_all_users()
 
 
+def delete_user(user_id: int) -> None:
+    db.delete_user(user_id)
+
+
 async def extract_qr_from_update(update, bot) -> Optional[str]:
     """Return QR code text from a message if available.
 

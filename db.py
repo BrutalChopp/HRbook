@@ -200,6 +200,17 @@ def update_user_office(telegram_id: int, office: str, role: str) -> None:
         conn.commit()
 
 
+def delete_user(telegram_id: int) -> None:
+    with get_conn() as conn:
+        cur = conn.cursor()
+        placeholder = "?" if DB_ENGINE == "sqlite" else "%s"
+        cur.execute(
+            f"DELETE FROM users WHERE telegram_id = {placeholder}",
+            (telegram_id,),
+        )
+        conn.commit()
+
+
 def get_all_users():
     with get_conn() as conn:
         cur = conn.cursor()

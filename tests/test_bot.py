@@ -217,3 +217,30 @@ async def test_add_book_photo(app, monkeypatch):
     conn.close()
     assert row[0] == "photoqr"
     assert row[1] == "Photo Book"
+
+
+@pytest.mark.asyncio
+async def test_delete_user(app):
+    application, sent, tmp = app
+    # admin registration
+    await application.process_update(make_update(application, "/start", user_id=1))
+    await application.process_update(make_update(application, "Admin"))
+    await application.process_update(make_update(application, "User"))
+    await application.process_update(make_update(application, "Main"))
+
+    # second user registration
+    await application.process_update(make_update(application, "/start", user_id=2))
+    await application.process_update(make_update(application, "User", user_id=2))
+    await application.process_update(make_update(application, "Two", user_id=2))
+    await application.process_update(make_update(application, "Main", user_id=2))
+
+    # delete second user
+    await application.process_update(make_update(application, "🗑 Удалить пользователя", user_id=1))
+    assert sent[-1] == "ID пользователя для удаления:"
+    await application.process_update(make_update(application, "2", user_id=1))
+    assert "удалён" in sent[-1]
+
+    conn = sqlite3.connect(tmp / "test.db")
+    count = conn.execute("SELECT COUNT(*) FROM users WHERE telegram_id=2").fetchone()[0]
+    conn.close()
+    assert count == 0
