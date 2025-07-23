@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+import logging
 
 from dotenv import load_dotenv
 import psycopg2
@@ -36,20 +37,28 @@ else:
 @contextmanager
 def get_conn():
     """Return a database connection context manager."""
-    if DB_ENGINE == "sqlite":
-        conn = sqlite3.connect(DB_NAME)
-    else:
-        conn = psycopg2.connect(
-            dbname=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD,
-            host=DB_HOST,
-            port=DB_PORT,
-        )
+    logging.info("Opening %s database connection", DB_ENGINE)
+    conn = None
     try:
+        if DB_ENGINE == "sqlite":
+            conn = sqlite3.connect(DB_NAME)
+        else:
+            conn = psycopg2.connect(
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD,
+                host=DB_HOST,
+                port=DB_PORT,
+            )
+        logging.info("Database connection established")
         yield conn
+    except Exception as exc:
+        logging.error("Database connection error: %s", exc)
+        raise
     finally:
-        conn.close()
+        if conn:
+            conn.close()
+            logging.info("Database connection closed")
 
 
 def init_db() -> None:
