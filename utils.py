@@ -44,17 +44,22 @@ def is_admin(user_id: int, office: Optional[str] = None) -> bool:
     return False
 
 
+def _normalize(text: str) -> str:
+    """Return a normalized string for office comparison."""
+    return text.strip().lower().replace("ё", "е")
+
+
 def resolve_office_name(name: str) -> Optional[str]:
     """Return canonical office key matching the provided text."""
     offices = getattr(config, "OFFICES", {})
-    name_clean = name.strip().lower()
+    name_clean = _normalize(name)
     for key, info in offices.items():
-        if key.lower() == name_clean:
+        if _normalize(key) == name_clean:
             return key
-        if str(info.get("name", "")).lower() == name_clean:
+        if _normalize(str(info.get("name", ""))) == name_clean:
             return key
         for alias in info.get("aliases", []):
-            if str(alias).lower() == name_clean:
+            if _normalize(str(alias)) == name_clean:
                 return key
     return None
 
