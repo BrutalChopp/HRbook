@@ -24,7 +24,7 @@ This bot requires outgoing HTTPS access to `api.telegram.org`. If the domain is 
 
 ## Usage
 
-Run the bot with:
+Set the `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST` and `DB_PORT` variables to connect to your PostgreSQL instance. Run the bot with:
 
 ```bash
 python main.py
@@ -36,13 +36,13 @@ During any step you can press the "↩️ Назад" button to cancel the curre
 and return to the main menu. Use the `/menu` command at any time to show the main keyboard again.
 Use the "📖 Все книги" button to see a list of all books with their current status.
 Administrators receive additional menu options for managing the library: adding books, generating reports, resetting book status and viewing the list of users.
-All data is stored in `data/users.json` and `data/books.json`.
+All data is stored in a database configured via environment variables. By default the bot expects a PostgreSQL server, but you can set `DB_ENGINE=sqlite` to run with a local SQLite file (used in the tests).
 
 ## Project Structure
 
 - `main.py` – bot startup script.
 - `handlers/` – handlers for user and admin actions.
-- `data/` – JSON files with users and books.
+- Database tables are created automatically in the configured engine.
 - `config.py` – loads configuration from environment variables.
 - `.env.example` – template to create your own `.env`.
 - `utils.py` – utility functions for data access and checks.

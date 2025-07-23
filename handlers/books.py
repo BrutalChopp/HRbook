@@ -16,7 +16,6 @@ from utils import (
     get_user_books,
     log_action,
     is_admin,
-    load_json,
     get_user,
     get_books_by_office,
     extract_qr_from_update,

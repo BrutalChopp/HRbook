@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 
 import config
+import db
 
 DATA_DIR = Path(__file__).parent / "data"
 DATA_DIR.mkdir(exist_ok=True)
@@ -66,28 +67,19 @@ def resolve_office_name(name: str) -> Optional[str]:
 
 def get_user(user_id: int) -> Optional[Dict[str, Any]]:
     """Return user data for the given Telegram ID."""
-    users = load_json("users.json")
-    for user in users:
-        if user.get("telegram_id") == user_id:
-            return user
-    return None
+    return db.get_user(user_id)
 
 
 def register_user(
     user_id: int, first_name: str, last_name: str, office: str
 ) -> Dict[str, Any]:
     """Register a user or update their Telegram ID."""
-    users = load_json("users.json")
-    for usr in users:
-        if (
-            usr.get("first_name") == first_name
-            and usr.get("last_name") == last_name
-            and usr.get("office") == office
-        ):
-            usr["telegram_id"] = user_id
-            save_json("users.json", users)
-            log_action("login_user", usr)
-            return usr
+    existing = db.get_user_by_name(first_name, last_name, office)
+    if existing:
+        existing["telegram_id"] = user_id
+        db.save_user(existing)
+        log_action("login_user", existing)
+        return existing
 
     user = {
         "telegram_id": user_id,
@@ -96,53 +88,42 @@ def register_user(
         "office": office,
         "role": "admin" if is_admin(user_id, office) else "user",
     }
-    users.append(user)
-    save_json("users.json", users)
+    db.save_user(user)
     log_action("register_user", user)
     return user
 
 
 def update_user_office(user_id: int, office: str) -> Optional[Dict[str, Any]]:
     """Update the office for an existing user."""
-    users = load_json("users.json")
-    for usr in users:
-        if usr.get("telegram_id") == user_id:
-            usr["office"] = office
-            usr["role"] = "admin" if is_admin(user_id, office) else "user"
-            save_json("users.json", users)
-            log_action("update_office", {"user_id": user_id, "office": office})
-            return usr
-    return None
+    user = db.get_user(user_id)
+    if not user:
+        return None
+    role = "admin" if is_admin(user_id, office) else "user"
+    db.update_user_office(user_id, office, role)
+    user.update({"office": office, "role": role})
+    log_action("update_office", {"user_id": user_id, "office": office})
+    return user
 
 
 def get_book_by_qr(qr: str) -> Optional[Dict[str, Any]]:
-    books = load_json("books.json")
-    for book in books:
-        if book.get("qr_code") == qr:
-            return book
-    return None
+    return db.get_book_by_qr(qr)
 
 
 def get_user_books(user_id: int) -> List[Dict[str, Any]]:
-    books = load_json("books.json")
-    return [b for b in books if b.get("taken_by") == user_id and b.get("status") == "taken"]
+    return db.get_user_books(user_id)
 
 
 def get_books_by_office(office: str) -> List[Dict[str, Any]]:
     """Return all books stored in the given office."""
-    books = load_json("books.json")
-    return [b for b in books if b.get("office") == office]
+    return db.get_books_by_office(office)
 
 
 def save_book(book: Dict[str, Any]) -> None:
-    books = load_json("books.json")
-    for i, b in enumerate(books):
-        if b.get("qr_code") == book.get("qr_code"):
-            books[i] = book
-            break
-    else:
-        books.append(book)
-    save_json("books.json", books)
+    db.save_book(book)
+
+
+def get_all_users() -> List[Dict[str, Any]]:
+    return db.get_all_users()
 
 
 async def extract_qr_from_update(update, bot) -> Optional[str]:

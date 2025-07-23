@@ -1,8 +1,8 @@
-import json
 import pytest
 
 from handlers.start import LAST_NAME, FIRST_NAME, OFFICE
 import utils
+import sqlite3
 from conftest import make_update
 from conftest import make_photo_update
 
@@ -21,9 +21,13 @@ async def test_registration_flow(app):
     assert sent[-1] == "Выберите офис:"
     await application.process_update(make_update(application, "Main"))
     assert sent[-1] == "✅ Регистрация успешна."
-    data = json.loads((tmp / "users.json").read_text())
-    assert data[0]["first_name"] == "Ivan"
-    assert data[0]["office"] == "Main"
+    conn = sqlite3.connect(tmp / "test.db")
+    row = conn.execute(
+        "SELECT first_name, office FROM users WHERE telegram_id = 1"
+    ).fetchone()
+    conn.close()
+    assert row[0] == "Ivan"
+    assert row[1] == "Main"
 
 
 @pytest.mark.asyncio
@@ -35,8 +39,10 @@ async def test_registration_office_case_insensitive(app):
     assert sent[-1] == "Выберите офис:"
     await application.process_update(make_update(application, "main"))
     assert sent[-1] == "✅ Регистрация успешна."
-    data = json.loads((tmp / "users.json").read_text())
-    assert data[0]["office"] == "Main"
+    conn = sqlite3.connect(tmp / "test.db")
+    row = conn.execute("SELECT office FROM users").fetchone()
+    conn.close()
+    assert row[0] == "Main"
 
 
 @pytest.mark.asyncio
@@ -48,7 +54,7 @@ async def test_take_and_return_book(app):
     await application.process_update(make_update(application, "First"))
     await application.process_update(make_update(application, "Main"))
     # prepare book
-    books = [
+    utils.save_book(
         {
             "qr_code": "qr1",
             "title": "Book",
@@ -57,21 +63,22 @@ async def test_take_and_return_book(app):
             "taken_date": None,
             "office": "Main",
         }
-    ]
-    (tmp / "books.json").write_text(json.dumps(books), encoding="utf-8")
+    )
     # take book
     await application.process_update(make_update(application, "🔍 Взять книгу"))
     assert sent[-1] == "Отправьте QR-код книги:"
     await application.process_update(make_update(application, "qr1"))
     assert any("успешно" in m for m in sent[-2:])
-    books = json.loads((tmp / "books.json").read_text())
-    assert books[0]["status"] == "taken"
+    conn = sqlite3.connect(tmp / "test.db")
+    status = conn.execute("SELECT status FROM books WHERE qr_code='qr1'").fetchone()[0]
+    assert status == "taken"
     # return book
     await application.process_update(make_update(application, "📤 Вернуть книгу"))
     assert sent[-1] == "Отправьте QR-код книги для возврата:"
     await application.process_update(make_update(application, "qr1"))
-    books = json.loads((tmp / "books.json").read_text())
-    assert books[0]["status"] == "available"
+    status = conn.execute("SELECT status FROM books WHERE qr_code='qr1'").fetchone()[0]
+    conn.close()
+    assert status == "available"
 
 
 @pytest.mark.asyncio
@@ -88,8 +95,10 @@ async def test_admin_operations(app):
     await application.process_update(make_update(application, "newqr"))
     assert sent[-1] == "Введите название книги:"
     await application.process_update(make_update(application, "New Book"))
-    books = json.loads((tmp / "books.json").read_text())
-    assert books[0]["qr_code"] == "newqr"
+    conn = sqlite3.connect(tmp / "test.db")
+    qr = conn.execute("SELECT qr_code FROM books WHERE qr_code='newqr'").fetchone()
+    conn.close()
+    assert qr[0] == "newqr"
     # non-admin attempt
     await application.process_update(make_update(application, "/start", user_id=2))
     await application.process_update(make_update(application, "User", user_id=2))
@@ -113,8 +122,10 @@ async def test_change_office(app):
     await application.process_update(make_update(application, "🏢 Сменить офис"))
     assert sent[-1] == "Выберите офис:"
     await application.process_update(make_update(application, "Alt"))
-    data = json.loads((tmp / "users.json").read_text())
-    assert data[0]["office"] == "Alt"
+    conn = sqlite3.connect(tmp / "test.db")
+    office = conn.execute("SELECT office FROM users WHERE telegram_id=1").fetchone()[0]
+    conn.close()
+    assert office == "Alt"
 
 
 @pytest.mark.asyncio
@@ -125,7 +136,7 @@ async def test_take_book_photo(app, monkeypatch):
     await application.process_update(make_update(application, "First"))
     await application.process_update(make_update(application, "Main"))
 
-    books = [
+    utils.save_book(
         {
             "qr_code": "qr1",
             "title": "Book",
@@ -134,8 +145,7 @@ async def test_take_book_photo(app, monkeypatch):
             "taken_date": None,
             "office": "Main",
         }
-    ]
-    (tmp / "books.json").write_text(json.dumps(books), encoding="utf-8")
+    )
 
     import qrcode
     import io
@@ -200,6 +210,10 @@ async def test_add_book_photo(app, monkeypatch):
     assert sent[-1] == "Введите название книги:"
 
     await application.process_update(make_update(application, "Photo Book"))
-    books = json.loads((tmp / "books.json").read_text())
-    assert books[0]["qr_code"] == "photoqr"
-    assert books[0]["title"] == "Photo Book"
+    conn = sqlite3.connect(tmp / "test.db")
+    row = conn.execute(
+        "SELECT qr_code, title FROM books WHERE qr_code='photoqr'"
+    ).fetchone()
+    conn.close()
+    assert row[0] == "photoqr"
+    assert row[1] == "Photo Book"
