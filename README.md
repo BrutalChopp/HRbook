@@ -1,6 +1,7 @@
 # QR Library Telegram Bot
 
 A simple Telegram bot to manage a paper book library using QR codes. Built with `python-telegram-bot` 20+.
+Documentation in Russian is available in the [docs](docs/README_RU.md) folder.
 
 ## Installation
 
